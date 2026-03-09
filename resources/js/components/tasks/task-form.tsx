@@ -1,4 +1,5 @@
 import { useForm } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { FormEventHandler } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,12 +19,13 @@ export function TaskForm() {
     return (
         <form onSubmit={handleSubmit} className="flex gap-2">
             <Input
-                placeholder="New task..."
+                placeholder="Add a task..."
                 value={form.data.title}
                 onChange={(e) => form.setData('title', e.target.value)}
-                className="flex-1"
+                className="flex-1 bg-card"
             />
             <Button type="submit" size="sm" disabled={form.processing || !form.data.title.trim()}>
+                <Plus className="size-4" />
                 Add
             </Button>
         </form>

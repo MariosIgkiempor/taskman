@@ -95,7 +95,7 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef }: WeeklyCalendarP
     };
 
     return (
-        <div className="h-full overflow-auto rounded-lg border [&_.fc-event-completed_.fc-event-title]:line-through [&_.fc-event-completed_.fc-event-title]:opacity-60 [&_.fc]:h-full">
+        <div className="h-full overflow-hidden rounded-lg bg-card [&_.fc]:h-full">
             <FullCalendar
                 ref={calendarRef}
                 plugins={[timeGridPlugin, interactionPlugin]}

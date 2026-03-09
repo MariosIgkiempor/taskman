@@ -25,11 +25,11 @@ export default function TasksIndex({ unscheduledTasks, scheduledTasks, currentWe
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Tasks" />
-            <div className="grid h-[calc(100vh-6rem)] grid-cols-3 gap-4 p-4">
-                <div className="col-span-1 overflow-hidden">
+            <div className="grid h-[calc(100vh-5rem)] grid-cols-[320px_1fr] gap-0 p-0">
+                <div className="border-r border-border/40 p-4">
                     <TaskSidebar ref={sidebarRef} tasks={unscheduledTasks} />
                 </div>
-                <div className="col-span-2 overflow-hidden">
+                <div className="overflow-hidden p-4">
                     <WeeklyCalendar tasks={scheduledTasks} weekStart={currentWeekStart} sidebarRef={sidebarRef} />
                 </div>
             </div>

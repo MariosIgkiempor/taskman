@@ -43,7 +43,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     }
 
     return (
-        <div className="px-4 py-6">
+        <div className="px-6 py-6">
             <Heading
                 title="Settings"
                 description="Manage your profile and account settings"
@@ -52,7 +52,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
             <div className="flex flex-col lg:flex-row lg:space-x-12">
                 <aside className="w-full max-w-xl lg:w-48">
                     <nav
-                        className="flex flex-col space-y-1 space-x-0"
+                        className="flex flex-col space-y-0.5 space-x-0"
                         aria-label="Settings"
                     >
                         {sidebarNavItems.map((item, index) => (
@@ -61,8 +61,9 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 size="sm"
                                 variant="ghost"
                                 asChild
-                                className={cn('w-full justify-start', {
-                                    'bg-muted': isCurrentOrParentUrl(item.href),
+                                className={cn('w-full justify-start font-medium', {
+                                    'bg-accent text-accent-foreground': isCurrentOrParentUrl(item.href),
+                                    'text-muted-foreground': !isCurrentOrParentUrl(item.href),
                                 })}
                             >
                                 <Link href={item.href}>
