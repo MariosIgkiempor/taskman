@@ -6,11 +6,11 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreTaskRequest extends FormRequest
+class SyncTaskTagsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return auth()->id() === $this->route('task')->user_id;
     }
 
     /**
@@ -19,9 +19,7 @@ class StoreTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'tag_ids' => ['sometimes', 'array'],
+            'tag_ids' => ['present', 'array'],
             'tag_ids.*' => [
                 'integer',
                 Rule::exists('tags', 'id')->where('user_id', $this->user()->id),

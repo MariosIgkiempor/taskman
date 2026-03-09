@@ -1,13 +1,15 @@
 import { useDroppable } from '@dnd-kit/core';
+import React from 'react';
 import { TaskCard } from '@/components/tasks/task-card';
 import type { Task } from '@/types';
 
 interface CalendarSlotProps {
     id: string;
     tasks: Task[];
+    onTaskClick: (task: Task, event: React.MouseEvent) => void;
 }
 
-export function CalendarSlot({ id, tasks }: CalendarSlotProps) {
+export function CalendarSlot({ id, tasks, onTaskClick }: CalendarSlotProps) {
     const { setNodeRef, isOver } = useDroppable({ id });
 
     return (
@@ -18,7 +20,7 @@ export function CalendarSlot({ id, tasks }: CalendarSlotProps) {
             }`}
         >
             {tasks.map((task) => (
-                <TaskCard key={task.id} task={task} />
+                <TaskCard key={task.id} task={task} onTaskClick={onTaskClick} />
             ))}
         </div>
     );

@@ -1,3 +1,9 @@
+export type Tag = {
+    id: number;
+    name: string;
+    color: string;
+};
+
 export type Task = {
     id: number;
     title: string;
@@ -6,4 +12,5 @@ export type Task = {
     duration_minutes: number;
     is_completed: boolean;
     position: number;
+    tags: Tag[];
 };
