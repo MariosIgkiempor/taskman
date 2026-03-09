@@ -41,7 +41,7 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef }: WeeklyCalendarP
         };
     }, [sidebarRef]);
 
-    const events = tasks.map((task) => ({
+    const events = tasks.filter((task) => task.scheduled_at).map((task) => ({
         id: `task-${task.id}`,
         title: task.title,
         start: task.scheduled_at!,
