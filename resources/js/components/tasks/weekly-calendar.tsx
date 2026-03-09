@@ -4,18 +4,22 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import { router } from '@inertiajs/react';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
-import type { Task } from '@/types';
-import type { EventDropArg } from '@fullcalendar/core';
+import { tagColors } from '@/lib/tag-colors';
+import type { Tag, Task } from '@/types';
+import type { EventClickArg, EventContentArg, EventDropArg } from '@fullcalendar/core';
 
 interface WeeklyCalendarProps {
     tasks: Task[];
     weekStart: string;
     sidebarRef: React.RefObject<HTMLDivElement | null>;
+    onTaskClick: (task: Task, event: React.MouseEvent) => void;
 }
 
-export function WeeklyCalendar({ tasks, weekStart, sidebarRef }: WeeklyCalendarProps) {
+export function WeeklyCalendar({ tasks, weekStart, sidebarRef, onTaskClick }: WeeklyCalendarProps) {
     const calendarRef = useRef<FullCalendar>(null);
     const draggableRef = useRef<Draggable | null>(null);
+    const tasksRef = useRef(tasks);
+    tasksRef.current = tasks;
 
     useEffect(() => {
         if (!sidebarRef.current) {
@@ -46,7 +50,7 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef }: WeeklyCalendarP
         title: task.title,
         start: task.scheduled_at!,
         end: new Date(new Date(task.scheduled_at!).getTime() + 60 * 60 * 1000).toISOString(),
-        extendedProps: { taskId: task.id, isCompleted: task.is_completed },
+        extendedProps: { taskId: task.id, isCompleted: task.is_completed, tags: task.tags },
         classNames: task.is_completed ? ['fc-event-completed'] : [],
     }));
 
@@ -94,6 +98,33 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef }: WeeklyCalendarP
         }
     };
 
+    const handleEventClick = (info: EventClickArg) => {
+        const taskId = info.event.extendedProps.taskId as number;
+        const task = tasksRef.current.find((t) => t.id === taskId);
+        if (task) {
+            onTaskClick(task, info.jsEvent as unknown as React.MouseEvent);
+        }
+    };
+
+    const renderEventContent = (eventInfo: EventContentArg) => {
+        const eventTags = (eventInfo.event.extendedProps.tags ?? []) as Tag[];
+
+        return (
+            <div className="flex flex-col gap-0.5 overflow-hidden">
+                <div className="fc-event-time text-[0.6875rem] font-medium opacity-70">{eventInfo.timeText}</div>
+                <div className="fc-event-title truncate">{eventInfo.event.title}</div>
+                {eventTags.length > 0 && (
+                    <div className="flex gap-1 pt-0.5">
+                        {eventTags.map((tag) => {
+                            const colors = tagColors[tag.color] ?? tagColors.gray;
+                            return <span key={tag.id} className={`${colors.dot} size-1.5 rounded-full`} />;
+                        })}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     return (
         <div className="h-full overflow-hidden rounded-lg bg-card [&_.fc]:h-full">
             <FullCalendar
@@ -111,6 +142,8 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef }: WeeklyCalendarP
                 eventDrop={handleEventDrop}
                 eventReceive={handleEventReceive}
                 eventDragStop={handleEventDragStop}
+                eventClick={handleEventClick}
+                eventContent={renderEventContent}
                 height="100%"
                 dayHeaderFormat={{ weekday: 'short', day: 'numeric' }}
                 slotLabelFormat={{ hour: 'numeric', meridiem: 'short' }}

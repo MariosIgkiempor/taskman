@@ -1,12 +1,14 @@
 <?php
 
-namespace App\Http\Requests\Task;
+namespace App\Http\Requests\Tag;
 
+use App\Enums\TagColor;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
-class StoreTaskRequest extends FormRequest
+class StoreTagRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -19,13 +21,13 @@ class StoreTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'tag_ids' => ['sometimes', 'array'],
-            'tag_ids.*' => [
-                'integer',
-                Rule::exists('tags', 'id')->where('user_id', $this->user()->id),
+            'name' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('tags')->where('user_id', $this->user()->id),
             ],
+            'color' => ['required', new Enum(TagColor::class)],
         ];
     }
 }

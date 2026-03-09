@@ -19,15 +19,24 @@ class TaskController extends Controller
         $weekStart = Carbon::now()->startOfWeek();
 
         return Inertia::render('tasks/index', [
-            'unscheduledTasks' => $user->tasks()->unscheduled()->orderBy('position')->orderBy('created_at', 'desc')->get(),
-            'scheduledTasks' => $user->tasks()->scheduled()->forWeek($weekStart)->orderBy('scheduled_at')->get(),
+            'unscheduledTasks' => $user->tasks()->with('tags')->unscheduled()->orderBy('position')->orderBy('created_at', 'desc')->get(),
+            'scheduledTasks' => $user->tasks()->with('tags')->scheduled()->forWeek($weekStart)->orderBy('scheduled_at')->get(),
             'currentWeekStart' => $weekStart->toISOString(),
+            'tags' => $user->tags()->orderBy('name')->get(),
         ]);
     }
 
     public function store(StoreTaskRequest $request): RedirectResponse
     {
-        $request->user()->tasks()->create($request->validated());
+        $validated = $request->validated();
+        $tagIds = $validated['tag_ids'] ?? [];
+        unset($validated['tag_ids']);
+
+        $task = $request->user()->tasks()->create($validated);
+
+        if ($tagIds) {
+            $task->tags()->sync($tagIds);
+        }
 
         return back();
     }
