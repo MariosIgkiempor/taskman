@@ -1,12 +1,12 @@
-import { useEffect, useRef } from 'react';
+import type { EventClickArg, EventContentArg, EventDropArg, EventResizeDoneArg } from '@fullcalendar/core';
+import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import { router } from '@inertiajs/react';
+import { useEffect, useRef } from 'react';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import { tagColors } from '@/lib/tag-colors';
 import type { Tag, Task } from '@/types';
-import type { EventClickArg, EventContentArg, EventDropArg, EventResizeDoneArg } from '@fullcalendar/core';
 
 interface WeeklyCalendarProps {
     tasks: Task[];
@@ -19,7 +19,13 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef, onTaskClick }: We
     const calendarRef = useRef<FullCalendar>(null);
     const draggableRef = useRef<Draggable | null>(null);
     const tasksRef = useRef(tasks);
-    tasksRef.current = tasks;
+
+    useEffect(() => {
+        const calendarApi = calendarRef.current?.getApi();
+        if (calendarApi) {
+            calendarApi.gotoDate(weekStart);
+        }
+    }, [weekStart]);
 
     useEffect(() => {
         if (!sidebarRef.current) {
