@@ -41,7 +41,7 @@ class TaskController extends Controller
 
     public function schedule(ScheduleTaskRequest $request, Task $task): RedirectResponse
     {
-        $task->update(['scheduled_at' => $request->validated('scheduled_at')]);
+        $task->update($request->validated());
 
         return back();
     }

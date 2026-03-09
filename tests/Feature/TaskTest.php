@@ -120,6 +120,32 @@ test('cannot modify another user task', function () {
         ->assertForbidden();
 });
 
+test('can resize a task to change its duration', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->scheduled()->create();
+
+    $this->actingAs($user)
+        ->patch(route('tasks.schedule', $task), [
+            'scheduled_at' => $task->scheduled_at->toISOString(),
+            'duration_minutes' => 90,
+        ])
+        ->assertRedirect();
+
+    expect($task->fresh()->duration_minutes)->toBe(90);
+});
+
+test('duration must be at least 5 minutes', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->scheduled()->create();
+
+    $this->actingAs($user)
+        ->patch(route('tasks.schedule', $task), [
+            'scheduled_at' => $task->scheduled_at->toISOString(),
+            'duration_minutes' => 3,
+        ])
+        ->assertSessionHasErrors('duration_minutes');
+});
+
 test('index returns separated unscheduled and scheduled tasks', function () {
     $user = User::factory()->create();
 

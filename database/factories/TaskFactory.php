@@ -21,6 +21,7 @@ class TaskFactory extends Factory
             'description' => null,
             'scheduled_at' => null,
             'is_completed' => false,
+            'duration_minutes' => 60,
             'position' => 0,
         ];
     }

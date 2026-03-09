@@ -3,6 +3,7 @@ export type Task = {
     title: string;
     description: string | null;
     scheduled_at: string | null;
+    duration_minutes: number;
     is_completed: boolean;
     position: number;
 };

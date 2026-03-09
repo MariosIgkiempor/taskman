@@ -280,6 +280,20 @@
     opacity: 0.7;
 }
 
+/* Compact events (short duration) */
+.fc .fc-event-compact {
+    display: flex;
+    align-items: baseline;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fc .fc-event-compact .fc-event-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Completed events */
 .fc .fc-event-completed {
     opacity: 0.4;
