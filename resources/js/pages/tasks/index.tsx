@@ -4,6 +4,7 @@ import AppLayout from '@/layouts/app-layout';
 import { TaskSidebar } from '@/components/tasks/task-sidebar';
 import { WeeklyCalendar } from '@/components/tasks/weekly-calendar';
 import { TaskEditPopover } from '@/components/tasks/task-edit-popover';
+import { WeekNavigator } from '@/components/tasks/week-navigator';
 import { index as tasksIndex } from '@/routes/tasks';
 import type { BreadcrumbItem, Tag, Task } from '@/types';
 
@@ -59,13 +60,11 @@ export default function TasksIndex({ unscheduledTasks, scheduledTasks, currentWe
                         onTaskClick={handleTaskClick}
                     />
                 </div>
-                <div className="overflow-hidden p-4">
-                    <WeeklyCalendar
-                        tasks={scheduledTasks}
-                        weekStart={currentWeekStart}
-                        sidebarRef={sidebarRef}
-                        onTaskClick={handleTaskClick}
-                    />
+                <div className="flex flex-col gap-3 overflow-hidden p-4">
+                    <WeekNavigator weekStart={currentWeekStart} />
+                    <div className="min-h-0 flex-1">
+                        <WeeklyCalendar tasks={scheduledTasks} weekStart={currentWeekStart} sidebarRef={sidebarRef} onTaskClick={handleTaskClick} />
+                    </div>
                 </div>
             </div>
             <TaskEditPopover

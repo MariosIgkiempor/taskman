@@ -7,21 +7,24 @@ use App\Http\Requests\Task\StoreTaskRequest;
 use App\Http\Requests\Task\UpdateTaskRequest;
 use App\Models\Task;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class TaskController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $user = auth()->user();
-        $weekStart = Carbon::now()->startOfWeek();
+        $weekStart = Carbon::parse(
+            $request->validate(['week' => 'sometimes|date'])['week'] ?? now()
+        )->startOfWeek();
 
         return Inertia::render('tasks/index', [
             'unscheduledTasks' => $user->tasks()->with('tags')->unscheduled()->orderBy('position')->orderBy('created_at', 'desc')->get(),
             'scheduledTasks' => $user->tasks()->with('tags')->scheduled()->forWeek($weekStart)->orderBy('scheduled_at')->get(),
-            'currentWeekStart' => $weekStart->toISOString(),
+            'currentWeekStart' => $weekStart->toDateString(),
             'tags' => $user->tags()->orderBy('name')->get(),
         ]);
     }
@@ -50,7 +53,7 @@ class TaskController extends Controller
 
     public function schedule(ScheduleTaskRequest $request, Task $task): RedirectResponse
     {
-        $task->update(['scheduled_at' => $request->validated('scheduled_at')]);
+        $task->update($request->validated());
 
         return back();
     }

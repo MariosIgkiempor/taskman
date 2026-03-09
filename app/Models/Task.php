@@ -21,6 +21,7 @@ class Task extends Model
         'title',
         'description',
         'scheduled_at',
+        'duration_minutes',
         'is_completed',
         'position',
     ];

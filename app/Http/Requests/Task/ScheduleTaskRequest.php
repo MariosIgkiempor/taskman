@@ -19,6 +19,7 @@ class ScheduleTaskRequest extends FormRequest
     {
         return [
             'scheduled_at' => ['required', 'date'],
+            'duration_minutes' => ['sometimes', 'integer', 'min:5', 'max:1440'],
         ];
     }
 }

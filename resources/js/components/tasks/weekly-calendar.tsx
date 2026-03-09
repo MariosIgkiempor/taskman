@@ -6,7 +6,7 @@ import { router } from '@inertiajs/react';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import { tagColors } from '@/lib/tag-colors';
 import type { Tag, Task } from '@/types';
-import type { EventClickArg, EventContentArg, EventDropArg } from '@fullcalendar/core';
+import type { EventClickArg, EventContentArg, EventDropArg, EventResizeDoneArg } from '@fullcalendar/core';
 
 interface WeeklyCalendarProps {
     tasks: Task[];
@@ -45,11 +45,11 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef, onTaskClick }: We
         };
     }, [sidebarRef]);
 
-    const events = tasks.map((task) => ({
+    const events = tasks.filter((task) => task.scheduled_at).map((task) => ({
         id: `task-${task.id}`,
         title: task.title,
         start: task.scheduled_at!,
-        end: new Date(new Date(task.scheduled_at!).getTime() + 60 * 60 * 1000).toISOString(),
+        end: new Date(new Date(task.scheduled_at!).getTime() + task.duration_minutes * 60 * 1000).toISOString(),
         extendedProps: { taskId: task.id, isCompleted: task.is_completed, tags: task.tags },
         classNames: task.is_completed ? ['fc-event-completed'] : [],
     }));
@@ -74,6 +74,20 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef, onTaskClick }: We
             router.patch(
                 TaskController.schedule.url(taskId),
                 { scheduled_at: newStart.toISOString() },
+                { preserveScroll: true },
+            );
+        }
+    };
+
+    const handleEventResize = (info: EventResizeDoneArg) => {
+        const taskId = info.event.extendedProps.taskId as number;
+        const start = info.event.start;
+        const end = info.event.end;
+        if (taskId && start && end) {
+            const durationMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
+            router.patch(
+                TaskController.schedule.url(taskId),
+                { scheduled_at: start.toISOString(), duration_minutes: durationMinutes },
                 { preserveScroll: true },
             );
         }
@@ -141,13 +155,15 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef, onTaskClick }: We
                 droppable={true}
                 eventDrop={handleEventDrop}
                 eventReceive={handleEventReceive}
+                eventResize={handleEventResize}
                 eventDragStop={handleEventDragStop}
                 eventClick={handleEventClick}
-                eventContent={renderEventContent}
+                snapDuration="00:05:00"
                 height="100%"
                 dayHeaderFormat={{ weekday: 'short', day: 'numeric' }}
                 slotLabelFormat={{ hour: 'numeric', meridiem: 'short' }}
-                eventDurationEditable={false}
+                eventDurationEditable={true}
+                eventContent={renderEventContent}
                 nowIndicator={true}
             />
         </div>

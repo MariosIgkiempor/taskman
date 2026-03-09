@@ -120,6 +120,63 @@ test('cannot modify another user task', function () {
         ->assertForbidden();
 });
 
+test('can resize a task to change its duration', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->scheduled()->create();
+
+    $this->actingAs($user)
+        ->patch(route('tasks.schedule', $task), [
+            'scheduled_at' => $task->scheduled_at->toISOString(),
+            'duration_minutes' => 90,
+        ])
+        ->assertRedirect();
+
+    expect($task->fresh()->duration_minutes)->toBe(90);
+});
+
+test('duration must be at least 5 minutes', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->scheduled()->create();
+
+    $this->actingAs($user)
+        ->patch(route('tasks.schedule', $task), [
+            'scheduled_at' => $task->scheduled_at->toISOString(),
+            'duration_minutes' => 3,
+        ])
+        ->assertSessionHasErrors('duration_minutes');
+});
+
+test('index with week param returns tasks for that specific week', function () {
+    $user = User::factory()->create();
+
+    $targetWeekStart = now()->subWeeks(2)->startOfWeek();
+
+    Task::factory()->for($user)->create([
+        'scheduled_at' => $targetWeekStart->copy()->addDay()->setHour(10),
+    ]);
+
+    Task::factory()->for($user)->create([
+        'scheduled_at' => now()->startOfWeek()->addDay()->setHour(10),
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get(route('tasks.index', ['week' => $targetWeekStart->toDateString()]))
+        ->assertOk();
+
+    $props = $response->original->getData()['page']['props'];
+
+    expect($props['scheduledTasks'])->toHaveCount(1);
+    expect($props['currentWeekStart'])->toMatch('/^\d{4}-\d{2}-\d{2}$/');
+});
+
+test('index with invalid week param returns validation error', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('tasks.index', ['week' => 'not-a-date']))
+        ->assertRedirect();
+});
+
 test('index returns separated unscheduled and scheduled tasks', function () {
     $user = User::factory()->create();
 
