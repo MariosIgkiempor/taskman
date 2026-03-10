@@ -3,7 +3,7 @@ import { GripVertical, Trash2 } from 'lucide-react';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import { TagBadge } from '@/components/tags/tag-badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { TaskCheckbox } from '@/components/ui/task-checkbox';
 import type { Task } from '@/types';
 
 interface TaskCardProps {
@@ -38,9 +38,8 @@ export function TaskCard({ task, dimmed, onTaskClick }: TaskCardProps) {
             onClick={(e) => onTaskClick(task, e)}
         >
             <GripVertical className="size-3.5 shrink-0 text-muted-foreground/30 transition-colors group-hover:text-muted-foreground/60" />
-            <Checkbox
+            <TaskCheckbox
                 checked={task.is_completed}
-                onClick={(e) => e.stopPropagation()}
                 onCheckedChange={handleToggleComplete}
             />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
