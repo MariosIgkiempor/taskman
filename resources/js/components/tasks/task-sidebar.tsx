@@ -1,18 +1,23 @@
 import { Inbox } from 'lucide-react';
 import { forwardRef } from 'react';
+import { TagTimeBreakdown } from '@/components/tasks/tag-time-breakdown';
 import { TaskCard } from '@/components/tasks/task-card';
 import { TaskForm } from '@/components/tasks/task-form';
 import type { Tag, Task } from '@/types';
 
 interface TaskSidebarProps {
     tasks: Task[];
+    scheduledTasks: Task[];
     tags: Tag[];
     onTagCreated: (tag: Tag) => void;
     onTaskClick: (task: Task, event: React.MouseEvent) => void;
 }
 
 export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
-    function TaskSidebar({ tasks, tags, onTagCreated, onTaskClick }, ref) {
+    function TaskSidebar(
+        { tasks, scheduledTasks, tags, onTagCreated, onTaskClick },
+        ref,
+    ) {
         return (
             <div className="flex h-full flex-col gap-4">
                 <div className="flex items-center gap-2.5">
@@ -50,6 +55,9 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
                             onTaskClick={onTaskClick}
                         />
                     ))}
+                </div>
+                <div className="border-t border-border/40 pt-3">
+                    <TagTimeBreakdown tasks={scheduledTasks} />
                 </div>
             </div>
         );
