@@ -19,7 +19,15 @@ interface TaskSidebarProps {
 
 export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
     function TaskSidebar(
-        { tasks, scheduledTasks, tags, selectedTagIds, onTagFilterToggle, onTagCreated, onTaskClick },
+        {
+            tasks,
+            scheduledTasks,
+            tags,
+            selectedTagIds,
+            onTagFilterToggle,
+            onTagCreated,
+            onTaskClick,
+        },
         ref,
     ) {
         const [createOpen, setCreateOpen] = useState(false);
@@ -77,7 +85,12 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
                         <TaskCard
                             key={task.id}
                             task={task}
-                            dimmed={selectedTagIds.size > 0 && !task.tags.some((tag) => selectedTagIds.has(tag.id))}
+                            dimmed={
+                                selectedTagIds.size > 0 &&
+                                !task.tags.some((tag) =>
+                                    selectedTagIds.has(tag.id),
+                                )
+                            }
                             onTaskClick={onTaskClick}
                         />
                     ))}
@@ -92,7 +105,8 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
                                 aria-label={`Filter by ${tag.name}`}
                                 onClick={() => onTagFilterToggle(tag.id)}
                                 className={`transition-opacity ${
-                                    selectedTagIds.size === 0 || selectedTagIds.has(tag.id)
+                                    selectedTagIds.size === 0 ||
+                                    selectedTagIds.has(tag.id)
                                         ? 'opacity-100'
                                         : 'opacity-40'
                                 }`}

@@ -80,7 +80,10 @@ export function WeeklyCalendar({
             },
             classNames: [
                 ...(task.is_completed ? ['fc-event-completed'] : []),
-                ...(selectedTagIds.size > 0 && !task.tags.some((tag) => selectedTagIds.has(tag.id)) ? ['fc-event-dimmed'] : []),
+                ...(selectedTagIds.size > 0 &&
+                !task.tags.some((tag) => selectedTagIds.has(tag.id))
+                    ? ['fc-event-dimmed']
+                    : []),
             ],
         }));
 

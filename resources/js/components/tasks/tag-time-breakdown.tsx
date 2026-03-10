@@ -35,7 +35,12 @@ export function TagTimeBreakdown({ tasks }: TagTimeBreakdownProps) {
                 if (existing) {
                     existing.minutes += task.duration_minutes;
                 } else {
-                    map.set('untagged', { key: 'untagged', name: 'Untagged', color: 'gray', minutes: task.duration_minutes });
+                    map.set('untagged', {
+                        key: 'untagged',
+                        name: 'Untagged',
+                        color: 'gray',
+                        minutes: task.duration_minutes,
+                    });
                 }
             } else {
                 for (const tag of task.tags) {
@@ -44,13 +49,20 @@ export function TagTimeBreakdown({ tasks }: TagTimeBreakdownProps) {
                     if (existing) {
                         existing.minutes += task.duration_minutes;
                     } else {
-                        map.set(tagKey, { key: tagKey, name: tag.name, color: tag.color, minutes: task.duration_minutes });
+                        map.set(tagKey, {
+                            key: tagKey,
+                            name: tag.name,
+                            color: tag.color,
+                            minutes: task.duration_minutes,
+                        });
                     }
                 }
             }
         }
 
-        const sorted = Array.from(map.values()).sort((a, b) => b.minutes - a.minutes);
+        const sorted = Array.from(map.values()).sort(
+            (a, b) => b.minutes - a.minutes,
+        );
         return { entries: sorted, grandTotal: total };
     }, [tasks]);
 
@@ -62,17 +74,25 @@ export function TagTimeBreakdown({ tasks }: TagTimeBreakdownProps) {
                 <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10">
                     <Clock className="size-3.5 text-primary" />
                 </div>
-                <h2 className="text-sm font-bold tracking-tight">Weekly Time</h2>
-                <span className="ml-auto rounded-md bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
+                <h2 className="text-sm font-bold tracking-tight">
+                    Weekly Time
+                </h2>
+                <span className="ml-auto rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground tabular-nums">
                     {formatDuration(grandTotal)}
                 </span>
             </div>
             <div className="flex flex-col gap-1.5 px-1">
                 {entries.map((entry) => (
                     <div key={entry.key} className="flex items-center gap-2">
-                        <span className={`size-1.5 shrink-0 rounded-full ${tagColors[entry.color]?.dot ?? 'bg-gray-500'}`} />
-                        <span className="flex-1 truncate text-xs font-medium">{entry.name}</span>
-                        <span className="text-xs tabular-nums text-muted-foreground">{formatDuration(entry.minutes)}</span>
+                        <span
+                            className={`size-1.5 shrink-0 rounded-full ${tagColors[entry.color]?.dot ?? 'bg-gray-500'}`}
+                        />
+                        <span className="flex-1 truncate text-xs font-medium">
+                            {entry.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                            {formatDuration(entry.minutes)}
+                        </span>
                     </div>
                 ))}
             </div>

@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { TaskEditPopover } from '@/components/tasks/task-edit-popover';
 import { TaskSidebar } from '@/components/tasks/task-sidebar';
 import { WeekNavigator } from '@/components/tasks/week-navigator';
@@ -30,6 +30,7 @@ export default function TasksIndex({
 }: Props) {
     const sidebarRef = useRef<HTMLDivElement>(null);
     const [localTags, setLocalTags] = useState<Tag[]>(tags);
+    const [prevTags, setPrevTags] = useState<Tag[]>(tags);
     const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(
         new Set(),
     );
@@ -39,14 +40,15 @@ export default function TasksIndex({
         y: number;
     } | null>(null);
 
-    useEffect(() => {
+    if (tags !== prevTags) {
+        setPrevTags(tags);
         setLocalTags(tags);
         const validIds = new Set(tags.map((t) => t.id));
         setSelectedTagIds((prev) => {
             const next = new Set([...prev].filter((id) => validIds.has(id)));
             return next.size === prev.size ? prev : next;
         });
-    }, [tags]);
+    }
 
     const handleTagCreated = useCallback((tag: Tag) => {
         setLocalTags((prev) =>

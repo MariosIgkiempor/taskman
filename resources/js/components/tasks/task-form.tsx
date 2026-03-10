@@ -1,8 +1,5 @@
 import { useRef } from 'react';
-import {
-    InputGroup,
-    InputGroupInput,
-} from '@/components/ui/input-group';
+import { InputGroup, InputGroupInput } from '@/components/ui/input-group';
 
 interface TaskFormProps {
     onOpen: (anchorRect: DOMRect) => void;

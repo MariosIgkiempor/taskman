@@ -77,7 +77,11 @@ interface TaskCreateFormProps {
 }
 
 function TaskCreateForm({ tags, onClose, onTagCreated }: TaskCreateFormProps) {
-    const form = useForm<{ title: string; description: string; tag_ids: number[] }>({
+    const form = useForm<{
+        title: string;
+        description: string;
+        tag_ids: number[];
+    }>({
         title: '',
         description: '',
         tag_ids: [],
@@ -178,7 +182,9 @@ function TaskCreateForm({ tags, onClose, onTagCreated }: TaskCreateFormProps) {
             <div className="px-3 pb-1">
                 <textarea
                     value={form.data.description}
-                    onChange={(e) => form.setData('description', e.target.value)}
+                    onChange={(e) =>
+                        form.setData('description', e.target.value)
+                    }
                     placeholder="Add a description..."
                     rows={2}
                     className="w-full resize-none bg-transparent text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/50"
