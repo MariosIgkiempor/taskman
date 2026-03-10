@@ -9,9 +9,9 @@ import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { router } from '@inertiajs/react';
 import { useEffect, useRef } from 'react';
-import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import { tagColors } from '@/lib/tag-colors';
 import type { Tag, Task } from '@/types';
+import TaskController from '@/actions/App/Http/Controllers/TaskController';
 
 interface WeeklyCalendarProps {
     tasks: Task[];
@@ -32,6 +32,10 @@ export function WeeklyCalendar({
     const containerRef = useRef<HTMLDivElement>(null);
     const draggableRef = useRef<Draggable | null>(null);
     const tasksRef = useRef(tasks);
+
+    useEffect(() => {
+        tasksRef.current = tasks;
+    }, [tasks]);
 
     useEffect(() => {
         const calendarApi = calendarRef.current?.getApi();
@@ -217,7 +221,10 @@ export function WeeklyCalendar({
     };
 
     return (
-        <div ref={containerRef} className="h-full overflow-hidden rounded-lg bg-card [&_.fc]:h-full">
+        <div
+            ref={containerRef}
+            className="h-full overflow-hidden rounded-lg bg-card [&_.fc]:h-full"
+        >
             <FullCalendar
                 ref={calendarRef}
                 plugins={[timeGridPlugin, interactionPlugin]}
