@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\GeocodeController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskTagController;
@@ -26,6 +27,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
 
     Route::patch('tasks/{task}/tags', [TaskTagController::class, 'sync'])->name('tasks.tags.sync');
+
+    Route::get('geocode', GeocodeController::class)->name('geocode');
 });
 
 require __DIR__.'/settings.php';

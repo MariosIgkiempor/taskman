@@ -1,5 +1,5 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { Inbox } from 'lucide-react';
+import { ChevronDown, Clock, Inbox } from 'lucide-react';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { TagBadge } from '@/components/tags/tag-badge';
 import { TagTimeBreakdown } from '@/components/tasks/tag-time-breakdown';
@@ -35,6 +35,8 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
         const [createOpen, setCreateOpen] = useState(false);
         const [createAnchorRect, setCreateAnchorRect] =
             useState<DOMRect | null>(null);
+        const [showCompleted, setShowCompleted] = useState(false);
+        const [showWeeklySummary, setShowWeeklySummary] = useState(false);
 
         const incompleteTasks = useMemo(
             () => tasks.filter((t) => !t.is_completed),
@@ -73,8 +75,9 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
         };
 
         return (
-            <div className="flex h-full flex-col gap-4">
-                <div className="flex items-center gap-2.5">
+            <div className="flex h-full min-h-0 flex-col gap-3">
+                {/* Header */}
+                <div className="flex shrink-0 items-center gap-2.5">
                     <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10">
                         <Inbox className="size-3.5 text-primary" />
                     </div>
@@ -87,17 +90,23 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
                         </span>
                     )}
                 </div>
-                <TaskForm onOpen={handleOpenCreate} />
-                <TaskCreatePopover
-                    isOpen={createOpen}
-                    anchorRect={createAnchorRect}
-                    tags={tags}
-                    onClose={handleCloseCreate}
-                    onTagCreated={onTagCreated}
-                />
+
+                {/* Create form */}
+                <div className="shrink-0">
+                    <TaskForm onOpen={handleOpenCreate} />
+                    <TaskCreatePopover
+                        isOpen={createOpen}
+                        anchorRect={createAnchorRect}
+                        tags={tags}
+                        onClose={handleCloseCreate}
+                        onTagCreated={onTagCreated}
+                    />
+                </div>
+
+                {/* Scrollable task list */}
                 <div
                     ref={ref}
-                    className="flex flex-1 flex-col gap-1 overflow-y-auto rounded-lg bg-muted/50 p-1.5 transition-colors"
+                    className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto rounded-lg bg-muted/50 p-1.5 transition-colors"
                 >
                     {tasks.length === 0 && (
                         <div className="flex flex-1 flex-col items-center justify-center gap-3 py-12">
@@ -123,35 +132,12 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
                                 onTaskClick={onTaskClick}
                             />
                         ))}
-                        {completedTasks.length > 0 && (
-                            <div
-                                key="completed-divider"
-                                className="flex items-center gap-2 px-2 pt-2 pb-1"
-                            >
-                                <div className="h-px flex-1 bg-border/60" />
-                                <span className="text-[0.6875rem] font-medium text-muted-foreground/50">
-                                    Completed
-                                </span>
-                                <div className="h-px flex-1 bg-border/60" />
-                            </div>
-                        )}
-                        {completedTasks.map((task) => (
-                            <TaskCard
-                                key={task.id}
-                                task={task}
-                                dimmed={
-                                    selectedTagIds.size > 0 &&
-                                    !task.tags.some((tag) =>
-                                        selectedTagIds.has(tag.id),
-                                    )
-                                }
-                                onTaskClick={onTaskClick}
-                            />
-                        ))}
                     </div>
                 </div>
+
+                {/* Tag filters */}
                 {tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 px-1">
+                    <div className="flex shrink-0 flex-wrap gap-1.5 px-1">
                         {tags.map((tag) => (
                             <button
                                 key={tag.id}
@@ -171,8 +157,72 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
                         ))}
                     </div>
                 )}
-                <div className="border-t border-border/40 pt-3">
-                    <TagTimeBreakdown tasks={scheduledTasks} />
+
+                {/* Collapsible sections at the bottom */}
+                <div className="flex shrink-0 flex-col border-t border-border/40 pt-2">
+                    {/* Completed toggle */}
+                    {completedTasks.length > 0 && (
+                        <div>
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setShowCompleted(!showCompleted)
+                                }
+                                className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/50"
+                            >
+                                <ChevronDown
+                                    className={`size-3.5 transition-transform ${showCompleted ? '' : '-rotate-90'}`}
+                                />
+                                Completed
+                                <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 text-[0.6875rem] tabular-nums">
+                                    {completedTasks.length}
+                                </span>
+                            </button>
+                            {showCompleted && (
+                                <div className="flex max-h-40 flex-col gap-1 overflow-y-auto rounded-lg bg-muted/50 p-1.5">
+                                    {completedTasks.map((task) => (
+                                        <TaskCard
+                                            key={task.id}
+                                            task={task}
+                                            dimmed={
+                                                selectedTagIds.size > 0 &&
+                                                !task.tags.some((tag) =>
+                                                    selectedTagIds.has(tag.id),
+                                                )
+                                            }
+                                            onTaskClick={onTaskClick}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Weekly summary toggle */}
+                    {scheduledTasks.length > 0 && (
+                        <div>
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setShowWeeklySummary(!showWeeklySummary)
+                                }
+                                className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/50"
+                            >
+                                <ChevronDown
+                                    className={`size-3.5 transition-transform ${showWeeklySummary ? '' : '-rotate-90'}`}
+                                />
+                                <Clock className="size-3" />
+                                Weekly Summary
+                            </button>
+                            {showWeeklySummary && (
+                                <div className="px-1 pt-1 pb-1">
+                                    <TagTimeBreakdown
+                                        tasks={scheduledTasks}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         );

@@ -3,6 +3,7 @@ import { Plus, Tag as TagIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import TagController from '@/actions/App/Http/Controllers/TagController';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
+import { LocationInput } from '@/components/location-input';
 import { TagBadge } from '@/components/tags/tag-badge';
 import { TagPicker } from '@/components/tags/tag-picker';
 import { Button } from '@/components/ui/button';
@@ -80,10 +81,14 @@ function TaskCreateForm({ tags, onClose, onTagCreated }: TaskCreateFormProps) {
     const form = useForm<{
         title: string;
         description: string;
+        location: string;
+        location_coordinates: { lat: number; lng: number } | null;
         tag_ids: number[];
     }>({
         title: '',
         description: '',
+        location: '',
+        location_coordinates: null,
         tag_ids: [],
     });
     const [showTagPicker, setShowTagPicker] = useState(false);
@@ -188,6 +193,22 @@ function TaskCreateForm({ tags, onClose, onTagCreated }: TaskCreateFormProps) {
                     placeholder="Add a description..."
                     rows={2}
                     className="w-full resize-none bg-transparent text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/50"
+                />
+            </div>
+
+            {/* Location */}
+            <div className="px-3 pb-1">
+                <LocationInput
+                    value={form.data.location}
+                    coordinates={form.data.location_coordinates}
+                    onChange={(loc, coords) => {
+                        form.setData((current) => ({
+                            ...current,
+                            location: loc,
+                            location_coordinates: coords,
+                        }));
+                    }}
+                    placeholder="Add a location..."
                 />
             </div>
 

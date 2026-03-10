@@ -104,8 +104,8 @@ export default function TasksIndex({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Tasks" />
-            <div className="grid h-[calc(100vh-5rem)] grid-cols-[320px_1fr] gap-0 p-0">
-                <div className="border-r border-border/40 p-4">
+            <div className="grid min-h-0 flex-1 grid-cols-[320px_1fr] gap-0 p-0">
+                <div className="flex min-h-0 flex-col border-r border-border/40 p-4">
                     <TaskSidebar
                         ref={sidebarRef}
                         tasks={unscheduledTasks}
@@ -117,7 +117,7 @@ export default function TasksIndex({
                         onTaskClick={handleTaskClick}
                     />
                 </div>
-                <div className="flex flex-col gap-3 overflow-hidden p-4">
+                <div className="flex min-h-0 flex-col gap-3 overflow-hidden p-4">
                     <WeekNavigator weekStart={currentWeekStart} />
                     <div className="min-h-0 flex-1">
                         <WeeklyCalendar
