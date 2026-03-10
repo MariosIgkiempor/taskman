@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
 import { Clock } from 'lucide-react';
+import { useMemo } from 'react';
 import { tagColors } from '@/lib/tag-colors';
 import type { Task } from '@/types';
 
