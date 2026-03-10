@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { Calendar, Check, Circle, Clock, Globe, Tag as TagIcon, Trash2, X } from 'lucide-react';
+import { Bell, Calendar, Check, Circle, Clock, Globe, Tag as TagIcon, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TagController from '@/actions/App/Http/Controllers/TagController';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
@@ -7,6 +7,7 @@ import TaskTagController from '@/actions/App/Http/Controllers/TaskTagController'
 import { LocationInput } from '@/components/location-input';
 import { TagBadge } from '@/components/tags/tag-badge';
 import { TagPicker } from '@/components/tags/tag-picker';
+import { ReminderPicker } from '@/components/tasks/reminder-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -45,6 +46,7 @@ interface TaskEditPopoverProps {
     onClose: () => void;
     onTagCreated: (tag: Tag) => void;
     onTagUpdated: (tag: Tag) => void;
+    onScheduledWithNotifiedReminders: (task: Task) => void;
 }
 
 export function TaskEditPopover({
@@ -54,6 +56,7 @@ export function TaskEditPopover({
     onClose,
     onTagCreated,
     onTagUpdated,
+    onScheduledWithNotifiedReminders,
 }: TaskEditPopoverProps) {
     const isOpen = task !== null && anchorPoint !== null;
 
@@ -100,6 +103,7 @@ export function TaskEditPopover({
                         onClose={onClose}
                         onTagCreated={onTagCreated}
                         onTagUpdated={onTagUpdated}
+                        onScheduledWithNotifiedReminders={onScheduledWithNotifiedReminders}
                     />
                 )}
             </PopoverContent>
@@ -113,6 +117,7 @@ interface TaskEditFormProps {
     onClose: () => void;
     onTagCreated: (tag: Tag) => void;
     onTagUpdated: (tag: Tag) => void;
+    onScheduledWithNotifiedReminders: (task: Task) => void;
 }
 
 function TaskEditForm({
@@ -121,6 +126,7 @@ function TaskEditForm({
     onClose,
     onTagCreated,
     onTagUpdated,
+    onScheduledWithNotifiedReminders,
 }: TaskEditFormProps) {
     const parseScheduledAt = (scheduledAt: string | null) => {
         if (!scheduledAt) return { date: '', time: '' };
@@ -146,6 +152,7 @@ function TaskEditForm({
         task.location_coordinates,
     );
     const [showTagPicker, setShowTagPicker] = useState(false);
+    const [showReminderPicker, setShowReminderPicker] = useState(false);
     const [tagSearch, setTagSearch] = useState('');
     const [taskTags, setTaskTags] = useState<Tag[]>(task.tags);
     const pendingRef = useRef<{ title: string; description: string } | null>(
@@ -297,16 +304,20 @@ function TaskEditForm({
         (date: string, time: string, duration: string) => {
             if (!date) return;
             const timeValue = time || '09:00';
+            const currentTask = taskRef.current;
             router.patch(
-                TaskController.schedule.url(task.id),
+                TaskController.schedule.url(currentTask.id),
                 {
                     scheduled_at: `${date}T${timeValue}:00`,
                     duration_minutes: parseInt(duration, 10),
                 },
                 { preserveScroll: true },
             );
+            if (currentTask.reminders.some((r) => r.notified_at)) {
+                onScheduledWithNotifiedReminders(currentTask);
+            }
         },
-        [task.id],
+        [onScheduledWithNotifiedReminders],
     );
 
     const handleDateChange = (value: string) => {
@@ -599,6 +610,17 @@ function TaskEditForm({
                     <TagIcon className="size-3" />
                     Tags
                 </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-7 gap-1.5 px-2 text-xs ${task.reminders.length > 0 ? 'text-primary' : 'text-muted-foreground'}`}
+                    onClick={() => setShowReminderPicker(!showReminderPicker)}
+                    disabled={!task.scheduled_at}
+                    title={!task.scheduled_at ? 'Schedule the task first' : undefined}
+                >
+                    <Bell className="size-3" />
+                    Remind
+                </Button>
                 {locationCoordinates && task.scheduled_at && (
                     <Button
                         variant="ghost"
@@ -641,6 +663,18 @@ function TaskEditForm({
                         onClose={() => setShowTagPicker(false)}
                         searchQuery={tagSearch}
                         inline
+                    />
+                </div>
+            )}
+
+            {/* Inline reminder picker */}
+            {showReminderPicker && task.scheduled_at && (
+                <div className="border-t border-border/50">
+                    <ReminderPicker
+                        taskId={task.id}
+                        initialReminders={task.reminders.map(
+                            (r) => r.minutes_before,
+                        )}
                     />
                 </div>
             )}
