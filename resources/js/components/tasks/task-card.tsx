@@ -8,10 +8,11 @@ import type { Task } from '@/types';
 
 interface TaskCardProps {
     task: Task;
+    dimmed?: boolean;
     onTaskClick: (task: Task, event: React.MouseEvent) => void;
 }
 
-export function TaskCard({ task, onTaskClick }: TaskCardProps) {
+export function TaskCard({ task, dimmed, onTaskClick }: TaskCardProps) {
     const handleToggleComplete = () => {
         router.patch(
             TaskController.update.url(task.id),
@@ -31,8 +32,8 @@ export function TaskCard({ task, onTaskClick }: TaskCardProps) {
         <div
             data-task-id={task.id}
             data-task-title={task.title}
-            className={`group flex cursor-grab items-center gap-2.5 rounded-lg bg-card p-2.5 text-sm transition-colors duration-100 hover:bg-accent active:cursor-grabbing ${
-                task.is_completed ? 'opacity-50' : ''
+            className={`group flex cursor-grab items-center gap-2.5 rounded-lg bg-card p-2.5 text-sm transition-all duration-100 hover:bg-accent active:cursor-grabbing ${
+                task.is_completed ? 'opacity-50' : dimmed ? 'opacity-40' : ''
             }`}
             onClick={(e) => onTaskClick(task, e)}
         >
