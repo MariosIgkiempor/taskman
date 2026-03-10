@@ -17,6 +17,7 @@ interface WeeklyCalendarProps {
     tasks: Task[];
     weekStart: string;
     sidebarRef: React.RefObject<HTMLDivElement | null>;
+    selectedTagIds: Set<number>;
     onTaskClick: (task: Task, event: React.MouseEvent) => void;
 }
 
@@ -24,9 +25,11 @@ export function WeeklyCalendar({
     tasks,
     weekStart,
     sidebarRef,
+    selectedTagIds,
     onTaskClick,
 }: WeeklyCalendarProps) {
     const calendarRef = useRef<FullCalendar>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const draggableRef = useRef<Draggable | null>(null);
     const tasksRef = useRef(tasks);
     tasksRef.current = tasks;
@@ -37,6 +40,21 @@ export function WeeklyCalendar({
             calendarApi.gotoDate(weekStart);
         }
     }, [weekStart]);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        const calendarApi = calendarRef.current?.getApi();
+        if (!container || !calendarApi) {
+            return;
+        }
+
+        const observer = new ResizeObserver(() => {
+            calendarApi.updateSize();
+        });
+        observer.observe(container);
+
+        return () => observer.disconnect();
+    }, []);
 
     useEffect(() => {
         if (!sidebarRef.current) {
@@ -77,7 +95,13 @@ export function WeeklyCalendar({
                 isCompleted: task.is_completed,
                 tags: task.tags,
             },
-            classNames: task.is_completed ? ['fc-event-completed'] : [],
+            classNames: [
+                ...(task.is_completed ? ['fc-event-completed'] : []),
+                ...(selectedTagIds.size > 0 &&
+                !task.tags.some((tag) => selectedTagIds.has(tag.id))
+                    ? ['fc-event-dimmed']
+                    : []),
+            ],
         }));
 
     const handleEventDrop = (info: EventDropArg) => {
@@ -194,7 +218,7 @@ export function WeeklyCalendar({
     };
 
     return (
-        <div className="h-full overflow-hidden rounded-lg bg-card [&_.fc]:h-full">
+        <div ref={containerRef} className="h-full overflow-hidden rounded-lg bg-card [&_.fc]:h-full">
             <FullCalendar
                 ref={calendarRef}
                 plugins={[timeGridPlugin, interactionPlugin]}

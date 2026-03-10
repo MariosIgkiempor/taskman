@@ -311,6 +311,11 @@
     text-decoration: line-through;
 }
 
+/* Dimmed events (tag filter) */
+.fc .fc-event-dimmed {
+    opacity: 0.4;
+}
+
 /* Event dragging mirror */
 .fc .fc-event-mirror {
     opacity: 0.8;
