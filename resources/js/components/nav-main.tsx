@@ -14,7 +14,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
 
     return (
         <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel className="text-[0.65rem] font-bold uppercase tracking-widest text-sidebar-foreground/40">
+            <SidebarGroupLabel className="text-[0.65rem] font-bold tracking-widest text-sidebar-foreground/40 uppercase">
                 Platform
             </SidebarGroupLabel>
             <SidebarMenu>
@@ -27,7 +27,9 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                         >
                             <Link href={item.href} prefetch>
                                 {item.icon && <item.icon />}
-                                <span className="font-medium">{item.title}</span>
+                                <span className="font-medium">
+                                    {item.title}
+                                </span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

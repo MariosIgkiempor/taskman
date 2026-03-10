@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Tag\StoreTagRequest;
+use App\Http\Requests\Tag\UpdateTagRequest;
 use App\Models\Tag;
 use Illuminate\Http\JsonResponse;
 
@@ -18,6 +19,13 @@ class TagController extends Controller
         $tag = $request->user()->tags()->create($request->validated());
 
         return response()->json($tag, 201);
+    }
+
+    public function update(UpdateTagRequest $request, Tag $tag): JsonResponse
+    {
+        $tag->update($request->validated());
+
+        return response()->json($tag);
     }
 
     public function destroy(Tag $tag): JsonResponse

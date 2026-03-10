@@ -1,14 +1,20 @@
-import { useForm, useHttp } from '@inertiajs/react';
+import { useForm } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
-import { FormEventHandler, useCallback, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
+import type { FormEventHandler } from 'react';
+import { useCallback, useRef } from 'react';
+import TagController from '@/actions/App/Http/Controllers/TagController';
+import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import { TagBadge } from '@/components/tags/tag-badge';
 import { TagPicker } from '@/components/tags/tag-picker';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    Popover,
+    PopoverAnchor,
+    PopoverContent,
+} from '@/components/ui/popover';
 import { useTagPicker } from '@/hooks/use-tag-picker';
-import TaskController from '@/actions/App/Http/Controllers/TaskController';
-import TagController from '@/actions/App/Http/Controllers/TagController';
+import { requestJson } from '@/lib/request-json';
 import type { Tag } from '@/types';
 
 interface TaskFormProps {
@@ -17,10 +23,14 @@ interface TaskFormProps {
 }
 
 export function TaskForm({ tags, onTagCreated }: TaskFormProps) {
-    const form = useForm<{ title: string; tag_ids: number[] }>({ title: '', tag_ids: [] });
-    const tagCreate = useHttp<{ name: string; color: string }, Tag>({ name: '', color: '' });
+    const form = useForm<{ title: string; tag_ids: number[] }>({
+        title: '',
+        tag_ids: [],
+    });
     const inputRef = useRef<HTMLInputElement>(null);
-    const { isOpen, searchQuery, close, removeHashText } = useTagPicker(form.data.title);
+    const { isOpen, searchQuery, close, removeHashText } = useTagPicker(
+        form.data.title,
+    );
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -34,10 +44,14 @@ export function TaskForm({ tags, onTagCreated }: TaskFormProps) {
 
     const handleToggleTag = useCallback(
         (tagId: number) => {
-            const newTitle = removeHashText(form.data.title);
-            const currentIds = form.data.tag_ids;
-            const newIds = currentIds.includes(tagId) ? currentIds.filter((id) => id !== tagId) : [...currentIds, tagId];
-            form.setData({ ...form.data, title: newTitle, tag_ids: newIds });
+            form.setData((current) => {
+                const newTitle = removeHashText(current.title);
+                const newIds = current.tag_ids.includes(tagId)
+                    ? current.tag_ids.filter((id) => id !== tagId)
+                    : [...current.tag_ids, tagId];
+
+                return { ...current, title: newTitle, tag_ids: newIds };
+            });
             close();
             inputRef.current?.focus();
         },
@@ -46,44 +60,66 @@ export function TaskForm({ tags, onTagCreated }: TaskFormProps) {
 
     const handleCreateTag = useCallback(
         (name: string, color: string) => {
-            tagCreate.setData({ name, color });
-            tagCreate.post(TagController.store.url(), {
-                onSuccess: (response: Tag) => {
+            void (async () => {
+                try {
+                    const response = await requestJson<Tag>(
+                        'post',
+                        TagController.store.url(),
+                        { name, color },
+                    );
                     onTagCreated(response);
-                    const newTitle = removeHashText(form.data.title);
-                    form.setData({ ...form.data, title: newTitle, tag_ids: [...form.data.tag_ids, response.id] });
+                    form.setData((current) => ({
+                        ...current,
+                        title: removeHashText(current.title),
+                        tag_ids: [...current.tag_ids, response.id],
+                    }));
                     close();
                     inputRef.current?.focus();
-                },
-            });
+                } catch {
+                    // Keep the current form state if tag creation fails.
+                }
+            })();
         },
-        [form, tagCreate, removeHashText, close, onTagCreated],
+        [form, removeHashText, close, onTagCreated],
     );
 
     const handleRemoveTag = useCallback(
         (tagId: number) => {
-            form.setData('tag_ids', form.data.tag_ids.filter((id) => id !== tagId));
+            form.setData((current) => ({
+                ...current,
+                tag_ids: current.tag_ids.filter((id) => id !== tagId),
+            }));
         },
         [form],
     );
 
-    const selectedTags = tags.filter((tag) => form.data.tag_ids.includes(tag.id));
+    const selectedTags = tags.filter((tag) =>
+        form.data.tag_ids.includes(tag.id),
+    );
 
     return (
         <div className="space-y-2">
             <form onSubmit={handleSubmit} className="flex gap-2">
-                <Popover open={isOpen} onOpenChange={(open) => { if (!open) close(); }} modal={false}>
+                <Popover
+                    open={isOpen}
+                    onOpenChange={(open) => {
+                        if (!open) close();
+                    }}
+                    modal={false}
+                >
                     <PopoverAnchor asChild>
                         <Input
                             ref={inputRef}
                             placeholder="Add a task... (# for tags)"
                             value={form.data.title}
-                            onChange={(e) => form.setData('title', e.target.value)}
+                            onChange={(e) =>
+                                form.setData('title', e.target.value)
+                            }
                             className="flex-1 bg-card"
                         />
                     </PopoverAnchor>
                     <PopoverContent
-                        className="p-0 border-0 shadow-none bg-transparent"
+                        className="border-0 bg-transparent p-0 shadow-none"
                         side="bottom"
                         align="start"
                         sideOffset={4}
@@ -101,7 +137,11 @@ export function TaskForm({ tags, onTagCreated }: TaskFormProps) {
                         />
                     </PopoverContent>
                 </Popover>
-                <Button type="submit" size="sm" disabled={form.processing || !form.data.title.trim()}>
+                <Button
+                    type="submit"
+                    size="sm"
+                    disabled={form.processing || !form.data.title.trim()}
+                >
                     <Plus className="size-4" />
                     Add
                 </Button>
@@ -109,7 +149,12 @@ export function TaskForm({ tags, onTagCreated }: TaskFormProps) {
             {selectedTags.length > 0 && (
                 <div className="flex flex-wrap gap-1 px-1">
                     {selectedTags.map((tag) => (
-                        <TagBadge key={tag.id} tag={tag} size="sm" onRemove={() => handleRemoveTag(tag.id)} />
+                        <TagBadge
+                            key={tag.id}
+                            tag={tag}
+                            size="sm"
+                            onRemove={() => handleRemoveTag(tag.id)}
+                        />
                     ))}
                 </div>
             )}

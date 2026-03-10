@@ -15,7 +15,7 @@ export function CalendarSlot({ id, tasks, onTaskClick }: CalendarSlotProps) {
     return (
         <div
             ref={setNodeRef}
-            className={`min-h-[3rem] border-b border-r p-0.5 transition-colors ${
+            className={`min-h-[3rem] border-r border-b p-0.5 transition-colors ${
                 isOver ? 'bg-primary/10' : ''
             }`}
         >

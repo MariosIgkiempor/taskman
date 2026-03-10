@@ -1,4 +1,9 @@
-import type { EventClickArg, EventContentArg, EventDropArg, EventResizeDoneArg } from '@fullcalendar/core';
+import type {
+    EventClickArg,
+    EventContentArg,
+    EventDropArg,
+    EventResizeDoneArg,
+} from '@fullcalendar/core';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -15,7 +20,12 @@ interface WeeklyCalendarProps {
     onTaskClick: (task: Task, event: React.MouseEvent) => void;
 }
 
-export function WeeklyCalendar({ tasks, weekStart, sidebarRef, onTaskClick }: WeeklyCalendarProps) {
+export function WeeklyCalendar({
+    tasks,
+    weekStart,
+    sidebarRef,
+    onTaskClick,
+}: WeeklyCalendarProps) {
     const calendarRef = useRef<FullCalendar>(null);
     const draggableRef = useRef<Draggable | null>(null);
     const tasksRef = useRef(tasks);
@@ -51,14 +61,23 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef, onTaskClick }: We
         };
     }, [sidebarRef]);
 
-    const events = tasks.filter((task) => task.scheduled_at).map((task) => ({
-        id: `task-${task.id}`,
-        title: task.title,
-        start: task.scheduled_at!,
-        end: new Date(new Date(task.scheduled_at!).getTime() + task.duration_minutes * 60 * 1000).toISOString(),
-        extendedProps: { taskId: task.id, isCompleted: task.is_completed, tags: task.tags },
-        classNames: task.is_completed ? ['fc-event-completed'] : [],
-    }));
+    const events = tasks
+        .filter((task) => task.scheduled_at)
+        .map((task) => ({
+            id: `task-${task.id}`,
+            title: task.title,
+            start: task.scheduled_at!,
+            end: new Date(
+                new Date(task.scheduled_at!).getTime() +
+                    task.duration_minutes * 60 * 1000,
+            ).toISOString(),
+            extendedProps: {
+                taskId: task.id,
+                isCompleted: task.is_completed,
+                tags: task.tags,
+            },
+            classNames: task.is_completed ? ['fc-event-completed'] : [],
+        }));
 
     const handleEventDrop = (info: EventDropArg) => {
         const taskId = info.event.extendedProps.taskId;
@@ -72,7 +91,13 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef, onTaskClick }: We
         }
     };
 
-    const handleEventReceive = (info: { event: { extendedProps: Record<string, unknown>; start: Date | null; remove: () => void } }) => {
+    const handleEventReceive = (info: {
+        event: {
+            extendedProps: Record<string, unknown>;
+            start: Date | null;
+            remove: () => void;
+        };
+    }) => {
         const taskId = info.event.extendedProps.taskId as number;
         const newStart = info.event.start;
         if (taskId && newStart) {
@@ -90,16 +115,24 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef, onTaskClick }: We
         const start = info.event.start;
         const end = info.event.end;
         if (taskId && start && end) {
-            const durationMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
+            const durationMinutes = Math.round(
+                (end.getTime() - start.getTime()) / 60000,
+            );
             router.patch(
                 TaskController.schedule.url(taskId),
-                { scheduled_at: start.toISOString(), duration_minutes: durationMinutes },
+                {
+                    scheduled_at: start.toISOString(),
+                    duration_minutes: durationMinutes,
+                },
                 { preserveScroll: true },
             );
         }
     };
 
-    const handleEventDragStop = (info: { event: { extendedProps: Record<string, unknown> }; jsEvent: MouseEvent }) => {
+    const handleEventDragStop = (info: {
+        event: { extendedProps: Record<string, unknown> };
+        jsEvent: MouseEvent;
+    }) => {
         if (!sidebarRef.current) {
             return;
         }
@@ -114,7 +147,11 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef, onTaskClick }: We
             clientY <= sidebarRect.bottom
         ) {
             const taskId = info.event.extendedProps.taskId as number;
-            router.patch(TaskController.unschedule.url(taskId), {}, { preserveScroll: true });
+            router.patch(
+                TaskController.unschedule.url(taskId),
+                {},
+                { preserveScroll: true },
+            );
         }
     };
 
@@ -131,13 +168,23 @@ export function WeeklyCalendar({ tasks, weekStart, sidebarRef, onTaskClick }: We
 
         return (
             <div className="flex flex-col gap-0.5 overflow-hidden">
-                <div className="fc-event-time text-[0.6875rem] font-medium opacity-70">{eventInfo.timeText}</div>
-                <div className="fc-event-title truncate">{eventInfo.event.title}</div>
+                <div className="fc-event-time text-[0.6875rem] font-medium opacity-70">
+                    {eventInfo.timeText}
+                </div>
+                <div className="fc-event-title truncate">
+                    {eventInfo.event.title}
+                </div>
                 {eventTags.length > 0 && (
                     <div className="flex gap-1 pt-0.5">
                         {eventTags.map((tag) => {
-                            const colors = tagColors[tag.color] ?? tagColors.gray;
-                            return <span key={tag.id} className={`${colors.dot} size-1.5 rounded-full`} />;
+                            const colors =
+                                tagColors[tag.color] ?? tagColors.gray;
+                            return (
+                                <span
+                                    key={tag.id}
+                                    className={`${colors.dot} size-1.5 rounded-full`}
+                                />
+                            );
                         })}
                     </div>
                 )}
