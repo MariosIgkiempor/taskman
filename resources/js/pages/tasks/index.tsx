@@ -29,6 +29,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface Props {
     unscheduledTasks: Task[];
     scheduledTasks: Task[];
+    completedTasks: Task[];
     currentWeekStart: string;
     tags: Tag[];
 }
@@ -36,6 +37,7 @@ interface Props {
 export default function TasksIndex({
     unscheduledTasks,
     scheduledTasks,
+    completedTasks,
     currentWeekStart,
     tags,
 }: Props) {
@@ -120,7 +122,7 @@ export default function TasksIndex({
 
     // Find the latest version of the editing task from props (it may have been updated by Inertia reload)
     const currentEditingTask = editingTask
-        ? ([...unscheduledTasks, ...scheduledTasks].find(
+        ? ([...unscheduledTasks, ...scheduledTasks, ...completedTasks].find(
               (t) => t.id === editingTask.id,
           ) ?? editingTask)
         : null;
@@ -134,6 +136,7 @@ export default function TasksIndex({
                         ref={sidebarRef}
                         tasks={unscheduledTasks}
                         scheduledTasks={scheduledTasks}
+                        completedTasks={completedTasks}
                         tags={localTags}
                         selectedTagIds={selectedTagIds}
                         onTagFilterToggle={handleTagFilterToggle}

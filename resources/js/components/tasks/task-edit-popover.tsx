@@ -490,14 +490,34 @@ function TaskEditForm({
     return (
         <div className="flex flex-col">
             {/* Title */}
-            <div className="px-3 pt-3">
+            <div className="flex items-center gap-1 px-2 pt-2">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`size-7 shrink-0 ${task.is_completed ? 'text-primary' : 'text-muted-foreground'}`}
+                    onClick={handleToggleComplete}
+                >
+                    {task.is_completed ? (
+                        <Check className="size-4" />
+                    ) : (
+                        <Circle className="size-4" />
+                    )}
+                </Button>
                 <Input
                     ref={titleRef}
                     value={title}
                     onChange={(e) => handleTitleChange(e.target.value)}
-                    className="border-0 px-0 text-sm font-semibold shadow-none focus-visible:ring-0"
+                    className="flex-1 border-0 px-0 text-sm font-semibold shadow-none focus-visible:ring-0"
                     placeholder="Task title..."
                 />
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 shrink-0 text-muted-foreground hover:!text-destructive"
+                    onClick={handleDelete}
+                >
+                    <Trash2 className="size-4" />
+                </Button>
             </div>
 
             {/* Description */}
@@ -591,19 +611,6 @@ function TaskEditForm({
                 <Button
                     variant="ghost"
                     size="sm"
-                    className={`h-7 gap-1.5 px-2 text-xs ${task.is_completed ? 'text-primary' : 'text-muted-foreground'}`}
-                    onClick={handleToggleComplete}
-                >
-                    {task.is_completed ? (
-                        <Check className="size-3" />
-                    ) : (
-                        <Circle className="size-3" />
-                    )}
-                    {task.is_completed ? 'Completed' : 'Complete'}
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
                     className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
                     onClick={() => setShowTagPicker(!showTagPicker)}
                 >
@@ -632,16 +639,6 @@ function TaskEditForm({
                         Directions
                     </Button>
                 )}
-                <div className="flex-1" />
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:!text-destructive"
-                    onClick={handleDelete}
-                >
-                    <Trash2 className="size-3" />
-                    Delete
-                </Button>
             </div>
 
             {/* Inline tag picker */}

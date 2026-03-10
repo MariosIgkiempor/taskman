@@ -1,6 +1,6 @@
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { ChevronDown, Clock, Inbox } from 'lucide-react';
-import { forwardRef, useEffect, useMemo, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 import { TagBadge } from '@/components/tags/tag-badge';
 import { TagTimeBreakdown } from '@/components/tasks/tag-time-breakdown';
 import { TaskCard } from '@/components/tasks/task-card';
@@ -11,6 +11,7 @@ import type { Tag, Task } from '@/types';
 interface TaskSidebarProps {
     tasks: Task[];
     scheduledTasks: Task[];
+    completedTasks: Task[];
     tags: Tag[];
     selectedTagIds: Set<number>;
     onTagFilterToggle: (tagId: number) => void;
@@ -23,6 +24,7 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
         {
             tasks,
             scheduledTasks,
+            completedTasks,
             tags,
             selectedTagIds,
             onTagFilterToggle,
@@ -37,15 +39,6 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
             useState<DOMRect | null>(null);
         const [showCompleted, setShowCompleted] = useState(false);
         const [showWeeklySummary, setShowWeeklySummary] = useState(false);
-
-        const incompleteTasks = useMemo(
-            () => tasks.filter((t) => !t.is_completed),
-            [tasks],
-        );
-        const completedTasks = useMemo(
-            () => tasks.filter((t) => t.is_completed),
-            [tasks],
-        );
 
         // Disable auto-animate during drag to avoid conflicts with FullCalendar's Draggable
         useEffect(() => {
@@ -84,9 +77,9 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
                     <h2 className="text-sm font-bold tracking-tight">
                         Backlog
                     </h2>
-                    {incompleteTasks.length > 0 && (
+                    {tasks.length > 0 && (
                         <span className="ml-auto rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground tabular-nums">
-                            {incompleteTasks.length}
+                            {tasks.length}
                         </span>
                     )}
                 </div>
@@ -119,7 +112,7 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
                         </div>
                     )}
                     <div ref={animateRef} className="flex flex-col gap-1">
-                        {incompleteTasks.map((task) => (
+                        {tasks.map((task) => (
                             <TaskCard
                                 key={task.id}
                                 task={task}
