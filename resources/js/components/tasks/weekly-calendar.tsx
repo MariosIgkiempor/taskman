@@ -1,4 +1,5 @@
 import type {
+    EventApi,
     EventClickArg,
     EventContentArg,
     EventDropArg,
@@ -13,6 +14,8 @@ import { TaskCheckbox } from '@/components/ui/task-checkbox';
 import { tagColors } from '@/lib/tag-colors';
 import type { Tag, Task } from '@/types';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
+
+const SHADOW_EVENT_ID = 'duplicate-shadow';
 
 interface WeeklyCalendarProps {
     tasks: Task[];
@@ -35,6 +38,8 @@ export function WeeklyCalendar({
     const containerRef = useRef<HTMLDivElement>(null);
     const draggableRef = useRef<Draggable | null>(null);
     const tasksRef = useRef(tasks);
+    const isDuplicatingRef = useRef(false);
+    const isDraggingRef = useRef(false);
 
     useEffect(() => {
         tasksRef.current = tasks;
@@ -86,6 +91,74 @@ export function WeeklyCalendar({
         };
     }, [sidebarRef]);
 
+    // Track alt key state during drag via mousemove only.
+    // keydown/keyup are unreliable on macOS during pointer-captured drags.
+    useEffect(() => {
+        const syncAltState = (e: MouseEvent) => {
+            if (!isDraggingRef.current) {
+                return;
+            }
+
+            const wasAlt = isDuplicatingRef.current;
+            isDuplicatingRef.current = e.altKey;
+
+            const calendarApi = calendarRef.current?.getApi();
+            if (!calendarApi) {
+                return;
+            }
+
+            // Toggled into duplicate mode mid-drag — add shadow
+            if (e.altKey && !wasAlt) {
+                addShadowEvent(calendarApi);
+            }
+
+            // Toggled out of duplicate mode mid-drag — remove shadow
+            if (!e.altKey && wasAlt) {
+                removeShadowEvent(calendarApi);
+            }
+        };
+
+        document.addEventListener('mousemove', syncAltState);
+        return () => {
+            document.removeEventListener('mousemove', syncAltState);
+        };
+    }, []);
+
+    const addShadowEvent = (calendarApi: ReturnType<FullCalendar['getApi']>) => {
+        // Don't add if already exists
+        if (calendarApi.getEventById(SHADOW_EVENT_ID)) {
+            return;
+        }
+
+        // Find the event being dragged by looking at the current dragging state
+        // We stored the original event data in draggedEventRef
+        const origEvent = draggedEventRef.current;
+        if (!origEvent) {
+            return;
+        }
+
+        calendarApi.addEvent({
+            id: SHADOW_EVENT_ID,
+            title: origEvent.title,
+            start: origEvent.start!,
+            end: origEvent.end!,
+            classNames: ['fc-event-duplicating'],
+            editable: false,
+            extendedProps: origEvent.extendedProps,
+        });
+    };
+
+    const removeShadowEvent = (calendarApi: ReturnType<FullCalendar['getApi']>) => {
+        calendarApi.getEventById(SHADOW_EVENT_ID)?.remove();
+    };
+
+    const draggedEventRef = useRef<{
+        title: string;
+        start: Date | null;
+        end: Date | null;
+        extendedProps: Record<string, unknown>;
+    } | null>(null);
+
     const events = tasks
         .filter((task) => task.scheduled_at)
         .map((task) => ({
@@ -110,10 +183,73 @@ export function WeeklyCalendar({
             ],
         }));
 
+    const handleEventDragStart = (info: {
+        el: HTMLElement;
+        event: EventApi;
+        jsEvent: MouseEvent;
+    }) => {
+        isDraggingRef.current = true;
+        isDuplicatingRef.current = info.jsEvent.altKey;
+
+        // Store original event data for shadow creation
+        draggedEventRef.current = {
+            title: info.event.title,
+            start: info.event.start,
+            end: info.event.end,
+            extendedProps: { ...info.event.extendedProps },
+        };
+
+        if (info.jsEvent.altKey) {
+            const calendarApi = calendarRef.current?.getApi();
+            if (calendarApi) {
+                addShadowEvent(calendarApi);
+            }
+        }
+    };
+
     const handleEventDrop = (info: EventDropArg) => {
         const taskId = info.event.extendedProps.taskId;
         const newStart = info.event.start;
-        if (taskId && newStart) {
+
+        if (!taskId || !newStart) {
+            return;
+        }
+
+        const duplicating = isDuplicatingRef.current;
+
+        // Clean up drag state
+        isDuplicatingRef.current = false;
+        isDraggingRef.current = false;
+        draggedEventRef.current = null;
+
+        // Remove shadow event
+        const calendarApi = calendarRef.current?.getApi();
+        if (calendarApi) {
+            removeShadowEvent(calendarApi);
+        }
+
+        if (duplicating) {
+            info.revert();
+
+            // Brief blink on original after revert
+            requestAnimationFrame(() => {
+                const liveEl = calendarApi?.getEventById(info.event.id)?.el;
+                if (liveEl) {
+                    liveEl.classList.add('fc-event-duplicating');
+                    setTimeout(
+                        () =>
+                            liveEl.classList.remove('fc-event-duplicating'),
+                        1500,
+                    );
+                }
+            });
+
+            router.post(
+                TaskController.duplicate.url(taskId),
+                { scheduled_at: newStart.toISOString() },
+                { preserveScroll: true },
+            );
+        } else {
             const task = tasksRef.current.find((t) => t.id === taskId);
             router.patch(
                 TaskController.schedule.url(taskId),
@@ -172,6 +308,27 @@ export function WeeklyCalendar({
         event: { extendedProps: Record<string, unknown> };
         jsEvent: MouseEvent;
     }) => {
+        const wasDuplicating = isDuplicatingRef.current;
+
+        // Remove shadow event
+        const calendarApi = calendarRef.current?.getApi();
+        if (calendarApi) {
+            removeShadowEvent(calendarApi);
+        }
+
+        // Defer ref cleanup so handleEventDrop can read the state first
+        // (eventDragStop fires before eventDrop)
+        setTimeout(() => {
+            isDuplicatingRef.current = false;
+            isDraggingRef.current = false;
+            draggedEventRef.current = null;
+        }, 0);
+
+        // Don't unschedule during a duplicate drag
+        if (wasDuplicating) {
+            return;
+        }
+
         if (!sidebarRef.current) {
             return;
         }
@@ -268,6 +425,7 @@ export function WeeklyCalendar({
                 events={events}
                 editable={true}
                 droppable={true}
+                eventDragStart={handleEventDragStart}
                 eventDrop={handleEventDrop}
                 eventReceive={handleEventReceive}
                 eventResize={handleEventResize}

@@ -346,3 +346,60 @@ test('completed tasks appear in completedTasks regardless of schedule status', f
     expect($props['unscheduledTasks'])->toHaveCount(1);
     expect($props['completedTasks'])->toHaveCount(2);
 });
+
+test('can duplicate a task with all properties and tags', function () {
+    $user = User::factory()->create();
+    $tag = Tag::factory()->for($user)->create();
+    $task = Task::factory()->for($user)->scheduled()->withLocation()->create([
+        'description' => 'Important meeting',
+    ]);
+    $task->tags()->attach($tag);
+
+    $newScheduledAt = now()->addDays(2)->setHour(14)->setMinute(0)->setSecond(0)->toISOString();
+
+    $this->actingAs($user)
+        ->post(route('tasks.duplicate', $task), ['scheduled_at' => $newScheduledAt])
+        ->assertRedirect();
+
+    expect($user->tasks()->count())->toBe(2);
+
+    $duplicate = $user->tasks()->where('id', '!=', $task->id)->first();
+    expect($duplicate->title)->toBe($task->title);
+    expect($duplicate->description)->toBe('Important meeting');
+    expect($duplicate->duration_minutes)->toBe($task->duration_minutes);
+    expect($duplicate->location)->toBe($task->location);
+    expect($duplicate->location_coordinates)->toBe($task->location_coordinates);
+    expect($duplicate->tags)->toHaveCount(1);
+    expect($duplicate->tags->first()->id)->toBe($tag->id);
+});
+
+test('duplicated task starts as incomplete', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->scheduled()->completed()->create();
+
+    $this->actingAs($user)
+        ->post(route('tasks.duplicate', $task), ['scheduled_at' => now()->addDay()->toISOString()])
+        ->assertRedirect();
+
+    $duplicate = $user->tasks()->where('id', '!=', $task->id)->first();
+    expect($duplicate->is_completed)->toBeFalse();
+});
+
+test('cannot duplicate another user task', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $task = Task::factory()->for($otherUser)->scheduled()->create();
+
+    $this->actingAs($user)
+        ->post(route('tasks.duplicate', $task), ['scheduled_at' => now()->toISOString()])
+        ->assertForbidden();
+});
+
+test('duplicate requires scheduled_at', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->scheduled()->create();
+
+    $this->actingAs($user)
+        ->post(route('tasks.duplicate', $task), [])
+        ->assertSessionHasErrors('scheduled_at');
+});
