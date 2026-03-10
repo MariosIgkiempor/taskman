@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { Check, Circle, Tag as TagIcon, Trash2 } from 'lucide-react';
+import { Calendar, Check, Circle, Clock, Tag as TagIcon, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TagController from '@/actions/App/Http/Controllers/TagController';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
@@ -13,8 +13,29 @@ import {
     PopoverAnchor,
     PopoverContent,
 } from '@/components/ui/popover';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { requestJson } from '@/lib/request-json';
 import type { Tag, Task } from '@/types';
+
+const DURATION_OPTIONS = [
+    { value: '15', label: '15m' },
+    { value: '30', label: '30m' },
+    { value: '45', label: '45m' },
+    { value: '60', label: '1h' },
+    { value: '90', label: '1h 30m' },
+    { value: '120', label: '2h' },
+    { value: '150', label: '2h 30m' },
+    { value: '180', label: '3h' },
+    { value: '240', label: '4h' },
+    { value: '360', label: '6h' },
+    { value: '480', label: '8h' },
+] as const;
 
 interface TaskEditPopoverProps {
     task: Task | null;
@@ -100,8 +121,25 @@ function TaskEditForm({
     onTagCreated,
     onTagUpdated,
 }: TaskEditFormProps) {
+    const parseScheduledAt = (scheduledAt: string | null) => {
+        if (!scheduledAt) return { date: '', time: '' };
+        const d = new Date(scheduledAt);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        return { date: `${year}-${month}-${day}`, time: `${hours}:${minutes}` };
+    };
+
+    const initialSchedule = parseScheduledAt(task.scheduled_at);
     const [title, setTitle] = useState(task.title);
     const [description, setDescription] = useState(task.description ?? '');
+    const [scheduleDate, setScheduleDate] = useState(initialSchedule.date);
+    const [scheduleTime, setScheduleTime] = useState(initialSchedule.time);
+    const [durationMinutes, setDurationMinutes] = useState(
+        String(task.duration_minutes),
+    );
     const [showTagPicker, setShowTagPicker] = useState(false);
     const [tagSearch, setTagSearch] = useState('');
     const [taskTags, setTaskTags] = useState<Tag[]>(task.tags);
@@ -125,6 +163,17 @@ function TaskEditForm({
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setTaskTags(nextTaskTags);
     }, [task]);
+
+    // Keep scheduling state in sync when task prop changes
+    useEffect(() => {
+        const parsed = parseScheduledAt(task.scheduled_at);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setScheduleDate(parsed.date);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setScheduleTime(parsed.time);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setDurationMinutes(String(task.duration_minutes));
+    }, [task.scheduled_at, task.duration_minutes]);
 
     const pickerTags = useMemo(() => {
         const taskTagsById = new Map(taskTags.map((tag) => [tag.id, tag]));
@@ -197,6 +246,51 @@ function TaskEditForm({
             { is_completed: !task.is_completed },
             { preserveScroll: true },
         );
+    };
+
+    const saveSchedule = useCallback(
+        (date: string, time: string, duration: string) => {
+            if (!date) return;
+            const timeValue = time || '09:00';
+            router.patch(
+                TaskController.schedule.url(task.id),
+                {
+                    scheduled_at: `${date}T${timeValue}:00`,
+                    duration_minutes: parseInt(duration, 10),
+                },
+                { preserveScroll: true },
+            );
+        },
+        [task.id],
+    );
+
+    const handleDateChange = (value: string) => {
+        setScheduleDate(value);
+        if (value) {
+            saveSchedule(value, scheduleTime, durationMinutes);
+        }
+    };
+
+    const handleTimeChange = (value: string) => {
+        setScheduleTime(value);
+        if (scheduleDate) {
+            saveSchedule(scheduleDate, value, durationMinutes);
+        }
+    };
+
+    const handleDurationChange = (value: string) => {
+        setDurationMinutes(value);
+        if (scheduleDate) {
+            saveSchedule(scheduleDate, scheduleTime, value);
+        }
+    };
+
+    const handleClearSchedule = () => {
+        setScheduleDate('');
+        setScheduleTime('');
+        router.patch(TaskController.unschedule.url(task.id), {}, {
+            preserveScroll: true,
+        });
     };
 
     const handleDelete = () => {
@@ -377,6 +471,54 @@ function TaskEditForm({
                     ))}
                 </div>
             )}
+
+            {/* Schedule */}
+            <div className="flex flex-col gap-1.5 border-t border-border/50 px-3 py-2">
+                <div className="flex items-center gap-1.5">
+                    <Calendar className="size-3 shrink-0 text-muted-foreground" />
+                    <input
+                        type="date"
+                        value={scheduleDate}
+                        onChange={(e) => handleDateChange(e.target.value)}
+                        className="h-7 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    />
+                    <Clock className="size-3 shrink-0 text-muted-foreground" />
+                    <input
+                        type="time"
+                        value={scheduleTime}
+                        onChange={(e) => handleTimeChange(e.target.value)}
+                        className="h-7 w-[5.5rem] rounded-md border border-input bg-transparent px-2 text-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    />
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <Select
+                        value={durationMinutes}
+                        onValueChange={handleDurationChange}
+                    >
+                        <SelectTrigger size="sm" className="h-7 w-24 text-xs">
+                            <SelectValue placeholder="Duration" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {DURATION_OPTIONS.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    {task.scheduled_at && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                            onClick={handleClearSchedule}
+                        >
+                            <X className="size-3" />
+                            Unschedule
+                        </Button>
+                    )}
+                </div>
+            </div>
 
             {/* Actions bar */}
             <div className="flex items-center gap-1 border-t border-border/50 px-2 py-1.5">

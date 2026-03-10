@@ -135,6 +135,42 @@ test('can resize a task to change its duration', function () {
     expect($task->fresh()->duration_minutes)->toBe(90);
 });
 
+test('can schedule an unscheduled task with date time and duration', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->create();
+
+    $scheduledAt = now()->addDay()->setHour(14)->setMinute(30)->setSecond(0);
+
+    $this->actingAs($user)
+        ->patch(route('tasks.schedule', $task), [
+            'scheduled_at' => $scheduledAt->toISOString(),
+            'duration_minutes' => 45,
+        ])
+        ->assertRedirect();
+
+    $fresh = $task->fresh();
+    expect($fresh->scheduled_at)->not->toBeNull();
+    expect($fresh->duration_minutes)->toBe(45);
+});
+
+test('can reschedule a task to a different date and time', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->scheduled()->create();
+
+    $newScheduledAt = now()->addDays(3)->setHour(16)->setMinute(0)->setSecond(0);
+
+    $this->actingAs($user)
+        ->patch(route('tasks.schedule', $task), [
+            'scheduled_at' => $newScheduledAt->toISOString(),
+            'duration_minutes' => 120,
+        ])
+        ->assertRedirect();
+
+    $fresh = $task->fresh();
+    expect($fresh->scheduled_at->toDateString())->toBe($newScheduledAt->toDateString());
+    expect($fresh->duration_minutes)->toBe(120);
+});
+
 test('duration must be at least 5 minutes', function () {
     $user = User::factory()->create();
     $task = Task::factory()->for($user)->scheduled()->create();
