@@ -1,7 +1,8 @@
 import { Inbox } from 'lucide-react';
-import { forwardRef } from 'react';
+import { forwardRef, useState } from 'react';
 import { TagTimeBreakdown } from '@/components/tasks/tag-time-breakdown';
 import { TaskCard } from '@/components/tasks/task-card';
+import { TaskCreatePopover } from '@/components/tasks/task-create-popover';
 import { TaskForm } from '@/components/tasks/task-form';
 import type { Tag, Task } from '@/types';
 
@@ -18,6 +19,20 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
         { tasks, scheduledTasks, tags, onTagCreated, onTaskClick },
         ref,
     ) {
+        const [createOpen, setCreateOpen] = useState(false);
+        const [createAnchorRect, setCreateAnchorRect] =
+            useState<DOMRect | null>(null);
+
+        const handleOpenCreate = (rect: DOMRect) => {
+            setCreateAnchorRect(rect);
+            setCreateOpen(true);
+        };
+
+        const handleCloseCreate = () => {
+            setCreateOpen(false);
+            setCreateAnchorRect(null);
+        };
+
         return (
             <div className="flex h-full flex-col gap-4">
                 <div className="flex items-center gap-2.5">
@@ -33,7 +48,14 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
                         </span>
                     )}
                 </div>
-                <TaskForm tags={tags} onTagCreated={onTagCreated} />
+                <TaskForm onOpen={handleOpenCreate} />
+                <TaskCreatePopover
+                    isOpen={createOpen}
+                    anchorRect={createAnchorRect}
+                    tags={tags}
+                    onClose={handleCloseCreate}
+                    onTagCreated={onTagCreated}
+                />
                 <div
                     ref={ref}
                     className="flex flex-1 flex-col gap-1 overflow-y-auto rounded-lg bg-muted/50 p-1.5 transition-colors"
