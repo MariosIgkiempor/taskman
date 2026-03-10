@@ -17,6 +17,7 @@ interface WeeklyCalendarProps {
     tasks: Task[];
     weekStart: string;
     sidebarRef: React.RefObject<HTMLDivElement | null>;
+    selectedTagIds: Set<number>;
     onTaskClick: (task: Task, event: React.MouseEvent) => void;
 }
 
@@ -24,6 +25,7 @@ export function WeeklyCalendar({
     tasks,
     weekStart,
     sidebarRef,
+    selectedTagIds,
     onTaskClick,
 }: WeeklyCalendarProps) {
     const calendarRef = useRef<FullCalendar>(null);
@@ -76,7 +78,13 @@ export function WeeklyCalendar({
                 isCompleted: task.is_completed,
                 tags: task.tags,
             },
-            classNames: task.is_completed ? ['fc-event-completed'] : [],
+            classNames: [
+                ...(task.is_completed ? ['fc-event-completed'] : []),
+                ...(selectedTagIds.size > 0 &&
+                !task.tags.some((tag) => selectedTagIds.has(tag.id))
+                    ? ['fc-event-dimmed']
+                    : []),
+            ],
         }));
 
     const handleEventDrop = (info: EventDropArg) => {

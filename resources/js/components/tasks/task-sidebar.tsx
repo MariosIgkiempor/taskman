@@ -1,5 +1,6 @@
 import { Inbox } from 'lucide-react';
 import { forwardRef, useState } from 'react';
+import { TagBadge } from '@/components/tags/tag-badge';
 import { TagTimeBreakdown } from '@/components/tasks/tag-time-breakdown';
 import { TaskCard } from '@/components/tasks/task-card';
 import { TaskCreatePopover } from '@/components/tasks/task-create-popover';
@@ -10,13 +11,23 @@ interface TaskSidebarProps {
     tasks: Task[];
     scheduledTasks: Task[];
     tags: Tag[];
+    selectedTagIds: Set<number>;
+    onTagFilterToggle: (tagId: number) => void;
     onTagCreated: (tag: Tag) => void;
     onTaskClick: (task: Task, event: React.MouseEvent) => void;
 }
 
 export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
     function TaskSidebar(
-        { tasks, scheduledTasks, tags, onTagCreated, onTaskClick },
+        {
+            tasks,
+            scheduledTasks,
+            tags,
+            selectedTagIds,
+            onTagFilterToggle,
+            onTagCreated,
+            onTaskClick,
+        },
         ref,
     ) {
         const [createOpen, setCreateOpen] = useState(false);
@@ -74,10 +85,37 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
                         <TaskCard
                             key={task.id}
                             task={task}
+                            dimmed={
+                                selectedTagIds.size > 0 &&
+                                !task.tags.some((tag) =>
+                                    selectedTagIds.has(tag.id),
+                                )
+                            }
                             onTaskClick={onTaskClick}
                         />
                     ))}
                 </div>
+                {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 px-1">
+                        {tags.map((tag) => (
+                            <button
+                                key={tag.id}
+                                type="button"
+                                aria-pressed={selectedTagIds.has(tag.id)}
+                                aria-label={`Filter by ${tag.name}`}
+                                onClick={() => onTagFilterToggle(tag.id)}
+                                className={`transition-opacity ${
+                                    selectedTagIds.size === 0 ||
+                                    selectedTagIds.has(tag.id)
+                                        ? 'opacity-100'
+                                        : 'opacity-40'
+                                }`}
+                            >
+                                <TagBadge tag={tag} size="sm" />
+                            </button>
+                        ))}
+                    </div>
+                )}
                 <div className="border-t border-border/40 pt-3">
                     <TagTimeBreakdown tasks={scheduledTasks} />
                 </div>

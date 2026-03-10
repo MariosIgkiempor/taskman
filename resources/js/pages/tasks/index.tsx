@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { TaskEditPopover } from '@/components/tasks/task-edit-popover';
 import { TaskSidebar } from '@/components/tasks/task-sidebar';
 import { WeekNavigator } from '@/components/tasks/week-navigator';
@@ -30,20 +30,42 @@ export default function TasksIndex({
 }: Props) {
     const sidebarRef = useRef<HTMLDivElement>(null);
     const [localTags, setLocalTags] = useState<Tag[]>(tags);
+    const [prevTags, setPrevTags] = useState<Tag[]>(tags);
+    const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(
+        new Set(),
+    );
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [anchorPoint, setAnchorPoint] = useState<{
         x: number;
         y: number;
     } | null>(null);
 
-    useEffect(() => {
+    if (tags !== prevTags) {
+        setPrevTags(tags);
         setLocalTags(tags);
-    }, [tags]);
+        const validIds = new Set(tags.map((t) => t.id));
+        setSelectedTagIds((prev) => {
+            const next = new Set([...prev].filter((id) => validIds.has(id)));
+            return next.size === prev.size ? prev : next;
+        });
+    }
 
     const handleTagCreated = useCallback((tag: Tag) => {
         setLocalTags((prev) =>
             [...prev, tag].sort((a, b) => a.name.localeCompare(b.name)),
         );
+    }, []);
+
+    const handleTagFilterToggle = useCallback((tagId: number) => {
+        setSelectedTagIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(tagId)) {
+                next.delete(tagId);
+            } else {
+                next.add(tagId);
+            }
+            return next;
+        });
     }, []);
 
     const handleTagUpdated = useCallback((updatedTag: Tag) => {
@@ -82,6 +104,8 @@ export default function TasksIndex({
                         tasks={unscheduledTasks}
                         scheduledTasks={scheduledTasks}
                         tags={localTags}
+                        selectedTagIds={selectedTagIds}
+                        onTagFilterToggle={handleTagFilterToggle}
                         onTagCreated={handleTagCreated}
                         onTaskClick={handleTaskClick}
                     />
@@ -93,6 +117,7 @@ export default function TasksIndex({
                             tasks={scheduledTasks}
                             weekStart={currentWeekStart}
                             sidebarRef={sidebarRef}
+                            selectedTagIds={selectedTagIds}
                             onTaskClick={handleTaskClick}
                         />
                     </div>

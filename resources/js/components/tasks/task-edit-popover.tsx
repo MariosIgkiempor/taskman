@@ -335,9 +335,7 @@ function TaskEditForm({
                 <Input
                     ref={titleRef}
                     value={title}
-                    onChange={(e) =>
-                        handleTitleChange(e.target.value)
-                    }
+                    onChange={(e) => handleTitleChange(e.target.value)}
                     className="border-0 px-0 text-sm font-semibold shadow-none focus-visible:ring-0"
                     placeholder="Task title..."
                 />
@@ -347,9 +345,7 @@ function TaskEditForm({
             <div className="px-3 pb-1">
                 <textarea
                     value={description}
-                    onChange={(e) =>
-                        handleDescriptionChange(e.target.value)
-                    }
+                    onChange={(e) => handleDescriptionChange(e.target.value)}
                     placeholder="Add a description..."
                     rows={2}
                     className="w-full resize-none bg-transparent text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/50"
@@ -402,18 +398,14 @@ function TaskEditForm({
                     <div className="px-2 pt-1.5 pb-1">
                         <Input
                             value={tagSearch}
-                            onChange={(e) =>
-                                setTagSearch(e.target.value)
-                            }
+                            onChange={(e) => setTagSearch(e.target.value)}
                             placeholder="Search or create tag..."
                             className="h-7 border-0 px-1 text-xs shadow-none focus-visible:ring-0"
                         />
                     </div>
                     <TagPicker
                         tags={pickerTags}
-                        selectedTagIds={taskTags.map(
-                            (tag) => tag.id,
-                        )}
+                        selectedTagIds={taskTags.map((tag) => tag.id)}
                         onToggle={handleToggleTag}
                         onCreate={handleCreateTag}
                         onClose={() => setShowTagPicker(false)}
