@@ -5,8 +5,8 @@ import { TaskSidebar } from '@/components/tasks/task-sidebar';
 import { WeekNavigator } from '@/components/tasks/week-navigator';
 import { WeeklyCalendar } from '@/components/tasks/weekly-calendar';
 import AppLayout from '@/layouts/app-layout';
-import { index as tasksIndex } from '@/routes/tasks';
 import type { BreadcrumbItem, Tag, Task } from '@/types';
+import { index as tasksIndex } from '@/routes/tasks';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -39,6 +39,13 @@ export default function TasksIndex({
         x: number;
         y: number;
     } | null>(null);
+    const [prevWeekStart, setPrevWeekStart] = useState(currentWeekStart);
+
+    if (currentWeekStart !== prevWeekStart) {
+        setPrevWeekStart(currentWeekStart);
+        setEditingTask(null);
+        setAnchorPoint(null);
+    }
 
     if (tags !== prevTags) {
         setPrevTags(tags);
@@ -49,10 +56,6 @@ export default function TasksIndex({
             return next.size === prev.size ? prev : next;
         });
     }
-
-    useEffect(() => {
-        handleCloseEdit();
-    }, [currentWeekStart]);
 
     const handleTagCreated = useCallback((tag: Tag) => {
         setLocalTags((prev) =>
