@@ -6,8 +6,12 @@ import TagController from '@/actions/App/Http/Controllers/TagController';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import { TagBadge } from '@/components/tags/tag-badge';
 import { TagPicker } from '@/components/tags/tag-picker';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from '@/components/ui/input-group';
 import {
     Popover,
     PopoverAnchor,
@@ -99,52 +103,57 @@ export function TaskForm({ tags, onTagCreated }: TaskFormProps) {
 
     return (
         <div className="space-y-2">
-            <form onSubmit={handleSubmit} className="flex gap-2">
-                <Popover
-                    open={isOpen}
-                    onOpenChange={(open) => {
-                        if (!open) close();
-                    }}
-                    modal={false}
-                >
-                    <PopoverAnchor asChild>
-                        <Input
-                            ref={inputRef}
-                            placeholder="Add a task... (# for tags)"
-                            value={form.data.title}
-                            onChange={(e) =>
-                                form.setData('title', e.target.value)
-                            }
-                            className="flex-1 bg-card"
-                        />
-                    </PopoverAnchor>
-                    <PopoverContent
-                        className="border-0 bg-transparent p-0 shadow-none"
-                        side="bottom"
-                        align="start"
-                        sideOffset={4}
-                        onOpenAutoFocus={(e) => e.preventDefault()}
-                        onCloseAutoFocus={(e) => e.preventDefault()}
-                        onInteractOutside={() => close()}
+            <form onSubmit={handleSubmit}>
+                <InputGroup>
+                    <Popover
+                        open={isOpen}
+                        onOpenChange={(open) => {
+                            if (!open) close();
+                        }}
+                        modal={false}
                     >
-                        <TagPicker
-                            tags={tags}
-                            selectedTagIds={form.data.tag_ids}
-                            onToggle={handleToggleTag}
-                            onCreate={handleCreateTag}
-                            onClose={close}
-                            searchQuery={searchQuery}
-                        />
-                    </PopoverContent>
-                </Popover>
-                <Button
-                    type="submit"
-                    size="sm"
-                    disabled={form.processing || !form.data.title.trim()}
-                >
-                    <Plus className="size-4" />
-                    Add
-                </Button>
+                        <PopoverAnchor asChild>
+                            <InputGroupInput
+                                ref={inputRef}
+                                placeholder="Add a task... (# for tags)"
+                                value={form.data.title}
+                                onChange={(e) =>
+                                    form.setData('title', e.target.value)
+                                }
+                            />
+                        </PopoverAnchor>
+                        <PopoverContent
+                            className="border-0 bg-transparent p-0 shadow-none"
+                            side="bottom"
+                            align="start"
+                            sideOffset={4}
+                            onOpenAutoFocus={(e) => e.preventDefault()}
+                            onCloseAutoFocus={(e) => e.preventDefault()}
+                            onInteractOutside={() => close()}
+                        >
+                            <TagPicker
+                                tags={tags}
+                                selectedTagIds={form.data.tag_ids}
+                                onToggle={handleToggleTag}
+                                onCreate={handleCreateTag}
+                                onClose={close}
+                                searchQuery={searchQuery}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                    <InputGroupAddon align="inline-end">
+                        <InputGroupButton
+                            type="submit"
+                            size="icon-xs"
+                            disabled={
+                                form.processing || !form.data.title.trim()
+                            }
+                            aria-label="Add task"
+                        >
+                            <Plus />
+                        </InputGroupButton>
+                    </InputGroupAddon>
+                </InputGroup>
             </form>
             {selectedTags.length > 0 && (
                 <div className="flex flex-wrap gap-1 px-1">
