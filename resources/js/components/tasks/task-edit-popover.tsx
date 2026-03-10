@@ -33,45 +33,97 @@ export function TaskEditPopover({
     onTagCreated,
     onTagUpdated,
 }: TaskEditPopoverProps) {
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
+    const isOpen = task !== null && anchorPoint !== null;
+
+    const handleClose = useCallback(() => {
+        onClose();
+    }, [onClose]);
+
+    return (
+        <Popover
+            open={isOpen}
+            onOpenChange={(open) => {
+                if (!open) handleClose();
+            }}
+            modal={false}
+        >
+            <PopoverAnchor
+                style={
+                    anchorPoint
+                        ? {
+                              position: 'fixed',
+                              left: anchorPoint.x,
+                              top: anchorPoint.y,
+                              width: 0,
+                              height: 0,
+                              pointerEvents: 'none',
+                          }
+                        : undefined
+                }
+            />
+            <PopoverContent
+                side="right"
+                align="start"
+                sideOffset={12}
+                collisionPadding={16}
+                className="w-80 p-0"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                onCloseAutoFocus={(e) => e.preventDefault()}
+            >
+                {task && (
+                    <TaskEditForm
+                        key={task.id}
+                        task={task}
+                        tags={tags}
+                        onClose={onClose}
+                        onTagCreated={onTagCreated}
+                        onTagUpdated={onTagUpdated}
+                    />
+                )}
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+interface TaskEditFormProps {
+    task: Task;
+    tags: Tag[];
+    onClose: () => void;
+    onTagCreated: (tag: Tag) => void;
+    onTagUpdated: (tag: Tag) => void;
+}
+
+function TaskEditForm({
+    task,
+    tags,
+    onClose,
+    onTagCreated,
+    onTagUpdated,
+}: TaskEditFormProps) {
+    const [title, setTitle] = useState(task.title);
+    const [description, setDescription] = useState(task.description ?? '');
     const [showTagPicker, setShowTagPicker] = useState(false);
     const [tagSearch, setTagSearch] = useState('');
-    const [taskTags, setTaskTags] = useState<Tag[]>([]);
+    const [taskTags, setTaskTags] = useState<Tag[]>(task.tags);
     const pendingRef = useRef<{ title: string; description: string } | null>(
         null,
     );
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const titleRef = useRef<HTMLInputElement>(null);
     const taskRef = useRef(task);
-    const taskTagsRef = useRef<Tag[]>(task?.tags ?? []);
+    const taskTagsRef = useRef<Tag[]>(task.tags);
 
-    const isOpen = task !== null && anchorPoint !== null;
-
-    // Keep taskRef in sync, but only update title/description state when a new task is opened
+    // Keep taskRef in sync for use in callbacks
     useEffect(() => {
         taskRef.current = task;
     }, [task]);
 
-    const prevTaskIdRef = useRef<number | null>(null);
+    // Update optimistic tag state when task prop changes (e.g. after Inertia reload)
     useEffect(() => {
-        const nextTaskTags = task?.tags ?? [];
+        const nextTaskTags = task.tags;
         taskTagsRef.current = nextTaskTags;
-        // The popover keeps a local optimistic tag view and must reset it when the active task payload changes.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setTaskTags(nextTaskTags);
-
-        if (task && task.id !== prevTaskIdRef.current) {
-            prevTaskIdRef.current = task.id;
-            setTitle(task.title);
-            setDescription(task.description ?? '');
-            setShowTagPicker(false);
-            setTagSearch('');
-            pendingRef.current = null;
-        }
-        if (!task) {
-            prevTaskIdRef.current = null;
-        }
     }, [task]);
 
     const pickerTags = useMemo(() => {
@@ -80,12 +132,11 @@ export function TaskEditPopover({
         return tags.map((tag) => taskTagsById.get(tag.id) ?? tag);
     }, [tags, taskTags]);
 
+    // Auto-select title on mount
     useEffect(() => {
-        if (isOpen) {
-            const timer = setTimeout(() => titleRef.current?.select(), 50);
-            return () => clearTimeout(timer);
-        }
-    }, [isOpen]);
+        const timer = setTimeout(() => titleRef.current?.select(), 50);
+        return () => clearTimeout(timer);
+    }, []);
 
     const flushSave = useCallback(() => {
         if (debounceRef.current) {
@@ -139,20 +190,13 @@ export function TaskEditPopover({
         scheduleSave(title, value);
     };
 
-    const handleClose = () => {
-        flushSave();
-        onClose();
-    };
-
     const handleDelete = () => {
-        const currentTask = taskRef.current;
-        if (!currentTask) return;
         if (debounceRef.current) {
             clearTimeout(debounceRef.current);
             debounceRef.current = null;
         }
         pendingRef.current = null;
-        router.delete(TaskController.destroy.url(currentTask.id), {
+        router.delete(TaskController.destroy.url(task.id), {
             preserveScroll: true,
         });
         onClose();
@@ -161,7 +205,6 @@ export function TaskEditPopover({
     const handleToggleTag = useCallback(
         (tagId: number) => {
             const currentTask = taskRef.current;
-            if (!currentTask) return;
             const previousTags = taskTagsRef.current;
             const currentIds = previousTags.map((tag) => tag.id);
             const newIds = currentIds.includes(tagId)
@@ -191,7 +234,6 @@ export function TaskEditPopover({
     const handleCreateTag = useCallback(
         (name: string, color: string) => {
             const currentTask = taskRef.current;
-            if (!currentTask) return;
 
             void (async () => {
                 try {
@@ -257,7 +299,6 @@ export function TaskEditPopover({
 
     const handleRemoveTag = useCallback((tagId: number) => {
         const currentTask = taskRef.current;
-        if (!currentTask) return;
         const previousTags = taskTagsRef.current;
         const nextTags = previousTags.filter((tag) => tag.id !== tagId);
 
@@ -280,143 +321,107 @@ export function TaskEditPopover({
             });
     }, []);
 
-    // Cleanup debounce on unmount
+    // Flush pending save and cleanup debounce on unmount
     useEffect(() => {
         return () => {
-            if (debounceRef.current) {
-                clearTimeout(debounceRef.current);
-            }
+            flushSave();
         };
-    }, []);
+    }, [flushSave]);
 
     return (
-        <Popover
-            open={isOpen}
-            onOpenChange={(open) => {
-                if (!open) handleClose();
-            }}
-            modal={false}
-        >
-            <PopoverAnchor
-                style={
-                    anchorPoint
-                        ? {
-                              position: 'fixed',
-                              left: anchorPoint.x,
-                              top: anchorPoint.y,
-                              width: 0,
-                              height: 0,
-                              pointerEvents: 'none',
-                          }
-                        : undefined
-                }
-            />
-            <PopoverContent
-                side="right"
-                align="start"
-                sideOffset={12}
-                collisionPadding={16}
-                className="w-80 p-0"
-                onOpenAutoFocus={(e) => e.preventDefault()}
-                onCloseAutoFocus={(e) => e.preventDefault()}
-            >
-                {task && (
-                    <div className="flex flex-col">
-                        {/* Title */}
-                        <div className="px-3 pt-3">
-                            <Input
-                                ref={titleRef}
-                                value={title}
-                                onChange={(e) =>
-                                    handleTitleChange(e.target.value)
-                                }
-                                className="border-0 px-0 text-sm font-semibold shadow-none focus-visible:ring-0"
-                                placeholder="Task title..."
-                            />
-                        </div>
+        <div className="flex flex-col">
+            {/* Title */}
+            <div className="px-3 pt-3">
+                <Input
+                    ref={titleRef}
+                    value={title}
+                    onChange={(e) =>
+                        handleTitleChange(e.target.value)
+                    }
+                    className="border-0 px-0 text-sm font-semibold shadow-none focus-visible:ring-0"
+                    placeholder="Task title..."
+                />
+            </div>
 
-                        {/* Description */}
-                        <div className="px-3 pb-1">
-                            <textarea
-                                value={description}
-                                onChange={(e) =>
-                                    handleDescriptionChange(e.target.value)
-                                }
-                                placeholder="Add a description..."
-                                rows={2}
-                                className="w-full resize-none bg-transparent text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/50"
-                            />
-                        </div>
+            {/* Description */}
+            <div className="px-3 pb-1">
+                <textarea
+                    value={description}
+                    onChange={(e) =>
+                        handleDescriptionChange(e.target.value)
+                    }
+                    placeholder="Add a description..."
+                    rows={2}
+                    className="w-full resize-none bg-transparent text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/50"
+                />
+            </div>
 
-                        {/* Tags */}
-                        {taskTags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 px-3 pb-2">
-                                {taskTags.map((tag) => (
-                                    <TagBadge
-                                        key={tag.id}
-                                        tag={tag}
-                                        size="sm"
-                                        onRemove={() => handleRemoveTag(tag.id)}
-                                        onColorChange={(color) =>
-                                            handleChangeTagColor(tag.id, color)
-                                        }
-                                    />
-                                ))}
-                            </div>
-                        )}
+            {/* Tags */}
+            {taskTags.length > 0 && (
+                <div className="flex flex-wrap gap-1 px-3 pb-2">
+                    {taskTags.map((tag) => (
+                        <TagBadge
+                            key={tag.id}
+                            tag={tag}
+                            size="sm"
+                            onRemove={() => handleRemoveTag(tag.id)}
+                            onColorChange={(color) =>
+                                handleChangeTagColor(tag.id, color)
+                            }
+                        />
+                    ))}
+                </div>
+            )}
 
-                        {/* Actions bar */}
-                        <div className="flex items-center gap-1 border-t border-border/50 px-2 py-1.5">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
-                                onClick={() => setShowTagPicker(!showTagPicker)}
-                            >
-                                <TagIcon className="size-3" />
-                                Tags
-                            </Button>
-                            <div className="flex-1" />
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:!text-destructive"
-                                onClick={handleDelete}
-                            >
-                                <Trash2 className="size-3" />
-                                Delete
-                            </Button>
-                        </div>
+            {/* Actions bar */}
+            <div className="flex items-center gap-1 border-t border-border/50 px-2 py-1.5">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+                    onClick={() => setShowTagPicker(!showTagPicker)}
+                >
+                    <TagIcon className="size-3" />
+                    Tags
+                </Button>
+                <div className="flex-1" />
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:!text-destructive"
+                    onClick={handleDelete}
+                >
+                    <Trash2 className="size-3" />
+                    Delete
+                </Button>
+            </div>
 
-                        {/* Inline tag picker */}
-                        {showTagPicker && (
-                            <div className="border-t border-border/50">
-                                <div className="px-2 pt-1.5 pb-1">
-                                    <Input
-                                        value={tagSearch}
-                                        onChange={(e) =>
-                                            setTagSearch(e.target.value)
-                                        }
-                                        placeholder="Search or create tag..."
-                                        className="h-7 border-0 px-1 text-xs shadow-none focus-visible:ring-0"
-                                    />
-                                </div>
-                                <TagPicker
-                                    tags={pickerTags}
-                                    selectedTagIds={taskTags.map(
-                                        (tag) => tag.id,
-                                    )}
-                                    onToggle={handleToggleTag}
-                                    onCreate={handleCreateTag}
-                                    onClose={() => setShowTagPicker(false)}
-                                    searchQuery={tagSearch}
-                                    inline
-                                />
-                            </div>
-                        )}
+            {/* Inline tag picker */}
+            {showTagPicker && (
+                <div className="border-t border-border/50">
+                    <div className="px-2 pt-1.5 pb-1">
+                        <Input
+                            value={tagSearch}
+                            onChange={(e) =>
+                                setTagSearch(e.target.value)
+                            }
+                            placeholder="Search or create tag..."
+                            className="h-7 border-0 px-1 text-xs shadow-none focus-visible:ring-0"
+                        />
                     </div>
-                )}
-            </PopoverContent>
-        </Popover>
+                    <TagPicker
+                        tags={pickerTags}
+                        selectedTagIds={taskTags.map(
+                            (tag) => tag.id,
+                        )}
+                        onToggle={handleToggleTag}
+                        onCreate={handleCreateTag}
+                        onClose={() => setShowTagPicker(false)}
+                        searchQuery={tagSearch}
+                        inline
+                    />
+                </div>
+            )}
+        </div>
     );
 }
