@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { Tag as TagIcon, Trash2 } from 'lucide-react';
+import { Check, Circle, Tag as TagIcon, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TagController from '@/actions/App/Http/Controllers/TagController';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
@@ -190,6 +190,15 @@ function TaskEditForm({
         scheduleSave(title, value);
     };
 
+    const handleToggleComplete = () => {
+        flushSave();
+        router.patch(
+            TaskController.update.url(task.id),
+            { is_completed: !task.is_completed },
+            { preserveScroll: true },
+        );
+    };
+
     const handleDelete = () => {
         if (debounceRef.current) {
             clearTimeout(debounceRef.current);
@@ -371,6 +380,19 @@ function TaskEditForm({
 
             {/* Actions bar */}
             <div className="flex items-center gap-1 border-t border-border/50 px-2 py-1.5">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-7 gap-1.5 px-2 text-xs ${task.is_completed ? 'text-primary' : 'text-muted-foreground'}`}
+                    onClick={handleToggleComplete}
+                >
+                    {task.is_completed ? (
+                        <Check className="size-3" />
+                    ) : (
+                        <Circle className="size-3" />
+                    )}
+                    {task.is_completed ? 'Completed' : 'Complete'}
+                </Button>
                 <Button
                     variant="ghost"
                     size="sm"

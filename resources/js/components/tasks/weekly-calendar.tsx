@@ -9,6 +9,7 @@ import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { router } from '@inertiajs/react';
 import { useEffect, useRef } from 'react';
+import { TaskCheckbox } from '@/components/ui/task-checkbox';
 import { tagColors } from '@/lib/tag-colors';
 import type { Tag, Task } from '@/types';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
@@ -191,16 +192,36 @@ export function WeeklyCalendar({
         }
     };
 
+    const handleToggleComplete = (taskId: number, isCompleted: boolean) => {
+        router.patch(
+            TaskController.update.url(taskId),
+            { is_completed: !isCompleted },
+            { preserveScroll: true },
+        );
+    };
+
     const renderEventContent = (eventInfo: EventContentArg) => {
         const eventTags = (eventInfo.event.extendedProps.tags ?? []) as Tag[];
+        const taskId = eventInfo.event.extendedProps.taskId as number;
+        const isCompleted =
+            eventInfo.event.extendedProps.isCompleted as boolean;
 
         return (
             <div className="flex flex-col gap-0.5 overflow-hidden">
                 <div className="fc-event-time text-[0.6875rem] font-medium opacity-70">
                     {eventInfo.timeText}
                 </div>
-                <div className="fc-event-title truncate">
-                    {eventInfo.event.title}
+                <div className="flex items-center gap-1.5">
+                    <TaskCheckbox
+                        checked={isCompleted}
+                        onCheckedChange={() =>
+                            handleToggleComplete(taskId, isCompleted)
+                        }
+                        className="size-3.5"
+                    />
+                    <div className="fc-event-title truncate">
+                        {eventInfo.event.title}
+                    </div>
                 </div>
                 {eventTags.length > 0 && (
                     <div className="flex gap-1 pt-0.5">
