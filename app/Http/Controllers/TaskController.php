@@ -6,6 +6,7 @@ use App\Http\Requests\Task\ScheduleTaskRequest;
 use App\Http\Requests\Task\StoreTaskRequest;
 use App\Http\Requests\Task\UpdateTaskRequest;
 use App\Models\Task;
+use App\Notifications\TaskReminderNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -22,8 +23,8 @@ class TaskController extends Controller
         )->startOfWeek();
 
         return Inertia::render('tasks/index', [
-            'unscheduledTasks' => $user->tasks()->with('tags')->unscheduled()->orderBy('is_completed', 'asc')->orderBy('position')->orderBy('created_at', 'desc')->get(),
-            'scheduledTasks' => $user->tasks()->with('tags')->scheduled()->forWeek($weekStart)->orderBy('scheduled_at')->get(),
+            'unscheduledTasks' => $user->tasks()->with(['tags', 'reminders'])->unscheduled()->orderBy('is_completed', 'asc')->orderBy('position')->orderBy('created_at', 'desc')->get(),
+            'scheduledTasks' => $user->tasks()->with(['tags', 'reminders'])->scheduled()->forWeek($weekStart)->orderBy('scheduled_at')->get(),
             'currentWeekStart' => $weekStart->toDateString(),
             'tags' => $user->tags()->orderBy('name')->get(),
         ]);
@@ -48,6 +49,10 @@ class TaskController extends Controller
     {
         $task->update($request->validated());
 
+        if ($task->is_completed) {
+            $this->clearRemindersAndNotifications($task);
+        }
+
         return back();
     }
 
@@ -65,6 +70,7 @@ class TaskController extends Controller
         }
 
         $task->update(['scheduled_at' => null]);
+        $this->clearRemindersAndNotifications($task);
 
         return back();
     }
@@ -75,8 +81,23 @@ class TaskController extends Controller
             abort(403);
         }
 
+        $this->clearNotifications($task);
         $task->delete();
 
         return back();
+    }
+
+    private function clearRemindersAndNotifications(Task $task): void
+    {
+        $task->reminders()->delete();
+        $this->clearNotifications($task);
+    }
+
+    private function clearNotifications(Task $task): void
+    {
+        $task->user->notifications()
+            ->where('type', TaskReminderNotification::class)
+            ->whereRaw("json_extract(data, '$.task_id') = ?", [$task->id])
+            ->delete();
     }
 }

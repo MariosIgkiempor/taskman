@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskReminderController;
 use App\Http\Controllers\TaskTagController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -26,6 +28,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
 
     Route::patch('tasks/{task}/tags', [TaskTagController::class, 'sync'])->name('tasks.tags.sync');
+    Route::put('tasks/{task}/reminders', [TaskReminderController::class, 'sync'])->name('tasks.reminders.sync');
+    Route::patch('tasks/{task}/reminders/rearm', [TaskReminderController::class, 'rearm'])->name('tasks.reminders.rearm');
+
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
 });
 
 require __DIR__.'/settings.php';

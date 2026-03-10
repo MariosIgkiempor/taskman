@@ -20,6 +20,7 @@ interface WeeklyCalendarProps {
     sidebarRef: React.RefObject<HTMLDivElement | null>;
     selectedTagIds: Set<number>;
     onTaskClick: (task: Task, event: React.MouseEvent) => void;
+    onScheduledWithNotifiedReminders: (task: Task) => void;
 }
 
 export function WeeklyCalendar({
@@ -28,6 +29,7 @@ export function WeeklyCalendar({
     sidebarRef,
     selectedTagIds,
     onTaskClick,
+    onScheduledWithNotifiedReminders,
 }: WeeklyCalendarProps) {
     const calendarRef = useRef<FullCalendar>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -112,11 +114,15 @@ export function WeeklyCalendar({
         const taskId = info.event.extendedProps.taskId;
         const newStart = info.event.start;
         if (taskId && newStart) {
+            const task = tasksRef.current.find((t) => t.id === taskId);
             router.patch(
                 TaskController.schedule.url(taskId),
                 { scheduled_at: newStart.toISOString() },
                 { preserveScroll: true },
             );
+            if (task?.reminders.some((r) => r.notified_at)) {
+                onScheduledWithNotifiedReminders(task);
+            }
         }
     };
 
@@ -144,6 +150,7 @@ export function WeeklyCalendar({
         const start = info.event.start;
         const end = info.event.end;
         if (taskId && start && end) {
+            const task = tasksRef.current.find((t) => t.id === taskId);
             const durationMinutes = Math.round(
                 (end.getTime() - start.getTime()) / 60000,
             );
@@ -155,6 +162,9 @@ export function WeeklyCalendar({
                 },
                 { preserveScroll: true },
             );
+            if (task?.reminders.some((r) => r.notified_at)) {
+                onScheduledWithNotifiedReminders(task);
+            }
         }
     };
 

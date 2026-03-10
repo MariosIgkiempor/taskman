@@ -4,6 +4,13 @@ export type Tag = {
     color: string;
 };
 
+export type TaskReminder = {
+    id: number;
+    task_id: number;
+    minutes_before: number;
+    notified_at: string | null;
+};
+
 export type Task = {
     id: number;
     title: string;
@@ -13,4 +20,18 @@ export type Task = {
     is_completed: boolean;
     position: number;
     tags: Tag[];
+    reminders: TaskReminder[];
+};
+
+export type AppNotification = {
+    id: string;
+    type: string;
+    data: {
+        task_id: number;
+        task_title: string;
+        minutes_before: number;
+        scheduled_at: string;
+    };
+    read_at: string | null;
+    created_at: string;
 };

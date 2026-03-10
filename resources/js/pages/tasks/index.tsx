@@ -1,9 +1,20 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useCallback, useRef, useState } from 'react';
+import TaskReminderController from '@/actions/App/Http/Controllers/TaskReminderController';
 import { TaskEditPopover } from '@/components/tasks/task-edit-popover';
 import { TaskSidebar } from '@/components/tasks/task-sidebar';
 import { WeekNavigator } from '@/components/tasks/week-navigator';
 import { WeeklyCalendar } from '@/components/tasks/weekly-calendar';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { requestJson } from '@/lib/request-json';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem, Tag, Task } from '@/types';
 import { index as tasksIndex } from '@/routes/tasks';
@@ -39,6 +50,7 @@ export default function TasksIndex({
         x: number;
         y: number;
     } | null>(null);
+    const [rearmTask, setRearmTask] = useState<Task | null>(null);
     const [prevWeekStart, setPrevWeekStart] = useState(currentWeekStart);
 
     if (currentWeekStart !== prevWeekStart) {
@@ -94,6 +106,18 @@ export default function TasksIndex({
         setAnchorPoint(null);
     }, []);
 
+    const handleScheduledWithNotifiedReminders = useCallback((task: Task) => {
+        setRearmTask(task);
+    }, []);
+
+    const handleRearm = useCallback(() => {
+        if (!rearmTask) return;
+        void requestJson('patch', TaskReminderController.rearm.url(rearmTask.id)).then(() => {
+            router.reload();
+        });
+        setRearmTask(null);
+    }, [rearmTask]);
+
     // Find the latest version of the editing task from props (it may have been updated by Inertia reload)
     const currentEditingTask = editingTask
         ? ([...unscheduledTasks, ...scheduledTasks].find(
@@ -126,6 +150,7 @@ export default function TasksIndex({
                             sidebarRef={sidebarRef}
                             selectedTagIds={selectedTagIds}
                             onTaskClick={handleTaskClick}
+                            onScheduledWithNotifiedReminders={handleScheduledWithNotifiedReminders}
                         />
                     </div>
                 </div>
@@ -137,7 +162,26 @@ export default function TasksIndex({
                 onClose={handleCloseEdit}
                 onTagCreated={handleTagCreated}
                 onTagUpdated={handleTagUpdated}
+                onScheduledWithNotifiedReminders={handleScheduledWithNotifiedReminders}
             />
+            <Dialog open={rearmTask !== null} onOpenChange={(open) => { if (!open) setRearmTask(null); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Re-arm reminders?</DialogTitle>
+                        <DialogDescription>
+                            Reminders for this task have already been sent. Would you like to re-arm them for the new scheduled time?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setRearmTask(null)}>
+                            Skip
+                        </Button>
+                        <Button onClick={handleRearm}>
+                            Re-arm
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }
