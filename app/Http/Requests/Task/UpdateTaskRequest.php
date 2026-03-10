@@ -21,6 +21,10 @@ class UpdateTaskRequest extends FormRequest
             'title' => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'is_completed' => ['sometimes', 'boolean'],
+            'location' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'location_coordinates' => ['sometimes', 'nullable', 'array'],
+            'location_coordinates.lat' => ['required_with:location_coordinates', 'numeric', 'between:-90,90'],
+            'location_coordinates.lng' => ['required_with:location_coordinates', 'numeric', 'between:-180,180'],
         ];
     }
 }

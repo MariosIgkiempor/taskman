@@ -1,9 +1,10 @@
 import { router } from '@inertiajs/react';
-import { Calendar, Check, Circle, Clock, Tag as TagIcon, Trash2, X } from 'lucide-react';
+import { Calendar, Check, Circle, Clock, Globe, Tag as TagIcon, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TagController from '@/actions/App/Http/Controllers/TagController';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import TaskTagController from '@/actions/App/Http/Controllers/TaskTagController';
+import { LocationInput } from '@/components/location-input';
 import { TagBadge } from '@/components/tags/tag-badge';
 import { TagPicker } from '@/components/tags/tag-picker';
 import { Button } from '@/components/ui/button';
@@ -140,6 +141,10 @@ function TaskEditForm({
     const [durationMinutes, setDurationMinutes] = useState(
         String(task.duration_minutes),
     );
+    const [location, setLocation] = useState(task.location ?? '');
+    const [locationCoordinates, setLocationCoordinates] = useState(
+        task.location_coordinates,
+    );
     const [showTagPicker, setShowTagPicker] = useState(false);
     const [tagSearch, setTagSearch] = useState('');
     const [taskTags, setTaskTags] = useState<Tag[]>(task.tags);
@@ -237,6 +242,46 @@ function TaskEditForm({
     const handleDescriptionChange = (value: string) => {
         setDescription(value);
         scheduleSave(title, value);
+    };
+
+    const handleLocationChange = (
+        newLocation: string,
+        coords: { lat: number; lng: number } | null,
+    ) => {
+        setLocation(newLocation);
+        setLocationCoordinates(coords);
+        if (coords || newLocation === '') {
+            router.patch(
+                TaskController.update.url(taskRef.current.id),
+                {
+                    location: newLocation || null,
+                    location_coordinates: coords,
+                },
+                { preserveScroll: true },
+            );
+        }
+    };
+
+    const handleOpenDirections = () => {
+        if (!locationCoordinates || !task.scheduled_at) return;
+        const { lat, lng } = locationCoordinates;
+        const arrivalTime = new Date(
+            new Date(task.scheduled_at).getTime() - 15 * 60 * 1000,
+        );
+        const epochSeconds = Math.floor(arrivalTime.getTime() / 1000);
+        const openMaps = (origin: string) => {
+            const url = `https://www.google.com/maps/dir/${origin}/${lat},${lng}/data=!3m1!4b1!4m6!4m5!2m3!6e1!7e2!8j${epochSeconds}!3e0`;
+            window.open(url, '_blank');
+        };
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => openMaps(`${pos.coords.latitude},${pos.coords.longitude}`),
+                () => openMaps(''),
+                { timeout: 5000 },
+            );
+        } else {
+            openMaps('');
+        }
     };
 
     const handleToggleComplete = () => {
@@ -455,6 +500,16 @@ function TaskEditForm({
                 />
             </div>
 
+            {/* Location */}
+            <div className="px-3 pb-1">
+                <LocationInput
+                    value={location}
+                    coordinates={locationCoordinates}
+                    onChange={handleLocationChange}
+                    placeholder="Add a location..."
+                />
+            </div>
+
             {/* Tags */}
             {taskTags.length > 0 && (
                 <div className="flex flex-wrap gap-1 px-3 pb-2">
@@ -544,6 +599,17 @@ function TaskEditForm({
                     <TagIcon className="size-3" />
                     Tags
                 </Button>
+                {locationCoordinates && task.scheduled_at && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+                        onClick={handleOpenDirections}
+                    >
+                        <Globe className="size-3" />
+                        Directions
+                    </Button>
+                )}
                 <div className="flex-1" />
                 <Button
                     variant="ghost"
