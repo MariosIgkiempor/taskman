@@ -10,10 +10,10 @@ import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { router } from '@inertiajs/react';
 import { useEffect, useRef } from 'react';
+import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import { TaskCheckbox } from '@/components/ui/task-checkbox';
 import { tagColors } from '@/lib/tag-colors';
 import type { Tag, Task } from '@/types';
-import TaskController from '@/actions/App/Http/Controllers/TaskController';
 
 const SHADOW_EVENT_ID = 'duplicate-shadow';
 
@@ -91,6 +91,38 @@ export function WeeklyCalendar({
         };
     }, [sidebarRef]);
 
+    const draggedEventRef = useRef<{
+        title: string;
+        start: Date | null;
+        end: Date | null;
+        extendedProps: Record<string, unknown>;
+    } | null>(null);
+
+    const addShadowEvent = (calendarApi: ReturnType<FullCalendar['getApi']>) => {
+        if (calendarApi.getEventById(SHADOW_EVENT_ID)) {
+            return;
+        }
+
+        const origEvent = draggedEventRef.current;
+        if (!origEvent) {
+            return;
+        }
+
+        calendarApi.addEvent({
+            id: SHADOW_EVENT_ID,
+            title: origEvent.title,
+            start: origEvent.start!,
+            end: origEvent.end!,
+            classNames: ['fc-event-duplicating'],
+            editable: false,
+            extendedProps: origEvent.extendedProps,
+        });
+    };
+
+    const removeShadowEvent = (calendarApi: ReturnType<FullCalendar['getApi']>) => {
+        calendarApi.getEventById(SHADOW_EVENT_ID)?.remove();
+    };
+
     // Track alt key state during drag via mousemove only.
     // keydown/keyup are unreliable on macOS during pointer-captured drags.
     useEffect(() => {
@@ -123,41 +155,6 @@ export function WeeklyCalendar({
             document.removeEventListener('mousemove', syncAltState);
         };
     }, []);
-
-    const addShadowEvent = (calendarApi: ReturnType<FullCalendar['getApi']>) => {
-        // Don't add if already exists
-        if (calendarApi.getEventById(SHADOW_EVENT_ID)) {
-            return;
-        }
-
-        // Find the event being dragged by looking at the current dragging state
-        // We stored the original event data in draggedEventRef
-        const origEvent = draggedEventRef.current;
-        if (!origEvent) {
-            return;
-        }
-
-        calendarApi.addEvent({
-            id: SHADOW_EVENT_ID,
-            title: origEvent.title,
-            start: origEvent.start!,
-            end: origEvent.end!,
-            classNames: ['fc-event-duplicating'],
-            editable: false,
-            extendedProps: origEvent.extendedProps,
-        });
-    };
-
-    const removeShadowEvent = (calendarApi: ReturnType<FullCalendar['getApi']>) => {
-        calendarApi.getEventById(SHADOW_EVENT_ID)?.remove();
-    };
-
-    const draggedEventRef = useRef<{
-        title: string;
-        start: Date | null;
-        end: Date | null;
-        extendedProps: Record<string, unknown>;
-    } | null>(null);
 
     const events = tasks
         .filter((task) => task.scheduled_at)
