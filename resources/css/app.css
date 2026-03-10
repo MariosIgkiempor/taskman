@@ -326,6 +326,21 @@
     box-shadow: none;
 }
 
+/* Duplicate-mode blink on original event */
+.fc .fc-event-duplicating {
+    animation: fc-blink 0.6s ease-in-out infinite;
+}
+
+@keyframes fc-blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
 /* Drop highlight */
 .fc .fc-highlight {
     border-radius: var(--radius);

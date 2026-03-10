@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Task\DuplicateTaskRequest;
 use App\Http\Requests\Task\ScheduleTaskRequest;
 use App\Http\Requests\Task\StoreTaskRequest;
 use App\Http\Requests\Task\UpdateTaskRequest;
@@ -60,6 +61,18 @@ class TaskController extends Controller
     public function schedule(ScheduleTaskRequest $request, Task $task): RedirectResponse
     {
         $task->update($request->validated());
+
+        return back();
+    }
+
+    public function duplicate(DuplicateTaskRequest $request, Task $task): RedirectResponse
+    {
+        $newTask = $task->replicate();
+        $newTask->scheduled_at = $request->validated('scheduled_at');
+        $newTask->is_completed = false;
+        $request->user()->tasks()->save($newTask);
+
+        $newTask->tags()->sync($task->tags->pluck('id'));
 
         return back();
     }
