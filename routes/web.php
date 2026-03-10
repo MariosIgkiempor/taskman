@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\GeocodeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaskController;
@@ -34,6 +35,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::patch('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
     Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+
+    Route::get('geocode', GeocodeController::class)->name('geocode');
 });
 
 require __DIR__.'/settings.php';

@@ -19,6 +19,8 @@ export type Task = {
     duration_minutes: number;
     is_completed: boolean;
     position: number;
+    location: string | null;
+    location_coordinates: { lat: number; lng: number } | null;
     tags: Tag[];
     reminders: TaskReminder[];
 };

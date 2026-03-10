@@ -23,7 +23,17 @@ class TaskFactory extends Factory
             'is_completed' => false,
             'duration_minutes' => 60,
             'position' => 0,
+            'location' => null,
+            'location_coordinates' => null,
         ];
+    }
+
+    public function withLocation(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'location' => fake()->address(),
+            'location_coordinates' => ['lat' => fake()->latitude(), 'lng' => fake()->longitude()],
+        ]);
     }
 
     public function scheduled(): static

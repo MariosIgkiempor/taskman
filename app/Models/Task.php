@@ -25,6 +25,8 @@ class Task extends Model
         'duration_minutes',
         'is_completed',
         'position',
+        'location',
+        'location_coordinates',
     ];
 
     /**
@@ -35,6 +37,7 @@ class Task extends Model
         return [
             'scheduled_at' => 'datetime',
             'is_completed' => 'boolean',
+            'location_coordinates' => 'array',
         ];
     }
 

@@ -235,6 +235,71 @@ test('index returns scheduled tasks with their tags', function () {
     expect($props['scheduledTasks'][0]['tags'][0]['id'])->toBe($tag->id);
 });
 
+test('can create a task with location', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('tasks.store'), [
+            'title' => 'Meeting at office',
+            'location' => '123 Main St, New York, NY',
+            'location_coordinates' => ['lat' => 40.7128, 'lng' => -74.0060],
+        ])
+        ->assertRedirect();
+
+    $task = $user->tasks()->first();
+    expect($task->location)->toBe('123 Main St, New York, NY');
+    expect($task->location_coordinates)->toBe(['lat' => 40.7128, 'lng' => -74.006]);
+});
+
+test('can update a task with location', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->patch(route('tasks.update', $task), [
+            'location' => '456 Oak Ave, Chicago, IL',
+            'location_coordinates' => ['lat' => 41.8781, 'lng' => -87.6298],
+        ])
+        ->assertRedirect();
+
+    $fresh = $task->fresh();
+    expect($fresh->location)->toBe('456 Oak Ave, Chicago, IL');
+    expect($fresh->location_coordinates)->toBe(['lat' => 41.8781, 'lng' => -87.6298]);
+});
+
+test('can clear task location', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->withLocation()->create();
+
+    $this->actingAs($user)
+        ->patch(route('tasks.update', $task), [
+            'location' => null,
+            'location_coordinates' => null,
+        ])
+        ->assertRedirect();
+
+    $fresh = $task->fresh();
+    expect($fresh->location)->toBeNull();
+    expect($fresh->location_coordinates)->toBeNull();
+});
+
+test('location coordinates must have valid lat and lng', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->patch(route('tasks.update', $task), [
+            'location_coordinates' => ['lat' => 100, 'lng' => -74.0060],
+        ])
+        ->assertSessionHasErrors('location_coordinates.lat');
+
+    $this->actingAs($user)
+        ->patch(route('tasks.update', $task), [
+            'location_coordinates' => ['lat' => 40.7128, 'lng' => 200],
+        ])
+        ->assertSessionHasErrors('location_coordinates.lng');
+});
+
 test('index returns separated unscheduled and scheduled tasks', function () {
     $user = User::factory()->create();
 
