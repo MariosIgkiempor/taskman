@@ -37,7 +37,9 @@ export function NavFooter({
                                     {item.icon && (
                                         <item.icon className="h-4 w-4" />
                                     )}
-                                    <span className="font-medium">{item.title}</span>
+                                    <span className="font-medium">
+                                        {item.title}
+                                    </span>
                                 </a>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

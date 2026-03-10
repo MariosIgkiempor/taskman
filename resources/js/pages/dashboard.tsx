@@ -18,8 +18,12 @@ export default function Dashboard() {
             <Head title="Dashboard" />
             <div className="flex flex-1 flex-col gap-6 p-6">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-                    <p className="mt-1 text-sm text-muted-foreground">Here's an overview of your workspace.</p>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                        Welcome back
+                    </h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Here's an overview of your workspace.
+                    </p>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
@@ -29,8 +33,12 @@ export default function Dashboard() {
                                 <ListTodo className="size-4 text-primary" />
                             </div>
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tasks</p>
-                                <p className="text-lg font-bold tracking-tight">Manage your backlog</p>
+                                <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                    Tasks
+                                </p>
+                                <p className="text-lg font-bold tracking-tight">
+                                    Manage your backlog
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -41,8 +49,12 @@ export default function Dashboard() {
                                 <CalendarDays className="size-4 text-chart-2" />
                             </div>
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Schedule</p>
-                                <p className="text-lg font-bold tracking-tight">Plan your week</p>
+                                <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                    Schedule
+                                </p>
+                                <p className="text-lg font-bold tracking-tight">
+                                    Plan your week
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -53,8 +65,12 @@ export default function Dashboard() {
                                 <CheckCircle2 className="size-4 text-chart-5" />
                             </div>
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Progress</p>
-                                <p className="text-lg font-bold tracking-tight">Track completion</p>
+                                <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                                    Progress
+                                </p>
+                                <p className="text-lg font-bold tracking-tight">
+                                    Track completion
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -69,7 +85,9 @@ export default function Dashboard() {
                 </Link>
 
                 <div className="flex flex-1 items-center justify-center rounded-xl bg-muted/50">
-                    <p className="text-sm text-muted-foreground/50">More features coming soon</p>
+                    <p className="text-sm text-muted-foreground/50">
+                        More features coming soon
+                    </p>
                 </div>
             </div>
         </AppLayout>

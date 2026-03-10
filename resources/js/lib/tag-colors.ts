@@ -1,4 +1,7 @@
-export const tagColors: Record<string, { bg: string; text: string; dot: string; ring: string }> = {
+export const tagColors: Record<
+    string,
+    { bg: string; text: string; dot: string; ring: string }
+> = {
     red: {
         bg: 'bg-red-100 dark:bg-red-950/40',
         text: 'text-red-700 dark:text-red-400',

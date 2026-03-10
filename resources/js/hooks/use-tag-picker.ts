@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 interface UseTagPickerReturn {
     isOpen: boolean;
@@ -8,40 +8,37 @@ interface UseTagPickerReturn {
 }
 
 export function useTagPicker(inputValue: string): UseTagPickerReturn {
-    const [isOpen, setIsOpen] = useState(false);
-    const [hashPosition, setHashPosition] = useState(-1);
+    const [closedForValue, setClosedForValue] = useState<string | null>(null);
 
-    useEffect(() => {
+    const { derivedOpen, hashPosition } = useMemo(() => {
         const lastHash = inputValue.lastIndexOf('#');
 
         if (lastHash === -1) {
-            setIsOpen(false);
-            setHashPosition(-1);
-            return;
+            return { derivedOpen: false, hashPosition: -1 };
         }
 
         const beforeHash = inputValue[lastHash - 1];
         if (lastHash > 0 && beforeHash !== ' ') {
-            return;
+            return { derivedOpen: false, hashPosition: -1 };
         }
 
         const afterHash = inputValue.substring(lastHash + 1);
         if (afterHash.includes(' ')) {
-            setIsOpen(false);
-            setHashPosition(-1);
-            return;
+            return { derivedOpen: false, hashPosition: -1 };
         }
 
-        setIsOpen(true);
-        setHashPosition(lastHash);
+        return { derivedOpen: true, hashPosition: lastHash };
     }, [inputValue]);
 
-    const searchQuery = isOpen && hashPosition >= 0 ? inputValue.substring(hashPosition + 1) : '';
+    const isOpen = derivedOpen && closedForValue !== inputValue;
+    const searchQuery =
+        isOpen && hashPosition >= 0
+            ? inputValue.substring(hashPosition + 1)
+            : '';
 
     const close = useCallback(() => {
-        setIsOpen(false);
-        setHashPosition(-1);
-    }, []);
+        setClosedForValue(inputValue);
+    }, [inputValue]);
 
     const removeHashText = useCallback(
         (value: string): string => {

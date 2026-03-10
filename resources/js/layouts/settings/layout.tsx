@@ -61,10 +61,15 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                                 size="sm"
                                 variant="ghost"
                                 asChild
-                                className={cn('w-full justify-start font-medium', {
-                                    'bg-accent text-accent-foreground': isCurrentOrParentUrl(item.href),
-                                    'text-muted-foreground': !isCurrentOrParentUrl(item.href),
-                                })}
+                                className={cn(
+                                    'w-full justify-start font-medium',
+                                    {
+                                        'bg-accent text-accent-foreground':
+                                            isCurrentOrParentUrl(item.href),
+                                        'text-muted-foreground':
+                                            !isCurrentOrParentUrl(item.href),
+                                    },
+                                )}
                             >
                                 <Link href={item.href}>
                                     {item.icon && (

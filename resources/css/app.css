@@ -145,10 +145,10 @@
 /* ── Global flat overrides ──────────────────────────────────────── */
 
 /* Remove all default shadows from shadcn components */
-[data-slot="button"],
-[data-slot="input"],
-[data-slot="select-trigger"],
-[data-slot="card"] {
+[data-slot='button'],
+[data-slot='input'],
+[data-slot='select-trigger'],
+[data-slot='card'] {
     box-shadow: none !important;
 }
 
@@ -254,7 +254,9 @@
     font-size: 0.8125rem;
     font-weight: 600;
     line-height: 1.3;
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
     cursor: grab;
     overflow: hidden;
     box-shadow: none;

@@ -1,9 +1,9 @@
 import { router } from '@inertiajs/react';
 import { GripVertical, Trash2 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
-import { TagBadge } from '@/components/tags/tag-badge';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
+import { TagBadge } from '@/components/tags/tag-badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { Task } from '@/types';
 
 interface TaskCardProps {
@@ -43,7 +43,9 @@ export function TaskCard({ task, onTaskClick }: TaskCardProps) {
                 onCheckedChange={handleToggleComplete}
             />
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className={`truncate text-[0.8125rem] font-medium leading-snug ${task.is_completed ? 'text-muted-foreground line-through' : ''}`}>
+                <span
+                    className={`truncate text-[0.8125rem] leading-snug font-medium ${task.is_completed ? 'text-muted-foreground line-through' : ''}`}
+                >
                     {task.title}
                 </span>
                 {task.tags.length > 0 && (
