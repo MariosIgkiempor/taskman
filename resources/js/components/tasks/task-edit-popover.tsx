@@ -1,14 +1,19 @@
-import { router, useHttp } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { Tag as TagIcon, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { TagBadge } from '@/components/tags/tag-badge';
-import { TagPicker } from '@/components/tags/tag-picker';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import TagController from '@/actions/App/Http/Controllers/TagController';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import TaskTagController from '@/actions/App/Http/Controllers/TaskTagController';
-import TagController from '@/actions/App/Http/Controllers/TagController';
+import { TagBadge } from '@/components/tags/tag-badge';
+import { TagPicker } from '@/components/tags/tag-picker';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    Popover,
+    PopoverAnchor,
+    PopoverContent,
+} from '@/components/ui/popover';
+import { requestJson } from '@/lib/request-json';
 import type { Tag, Task } from '@/types';
 
 interface TaskEditPopoverProps {
@@ -17,20 +22,29 @@ interface TaskEditPopoverProps {
     tags: Tag[];
     onClose: () => void;
     onTagCreated: (tag: Tag) => void;
+    onTagUpdated: (tag: Tag) => void;
 }
 
-export function TaskEditPopover({ task, anchorPoint, tags, onClose, onTagCreated }: TaskEditPopoverProps) {
+export function TaskEditPopover({
+    task,
+    anchorPoint,
+    tags,
+    onClose,
+    onTagCreated,
+    onTagUpdated,
+}: TaskEditPopoverProps) {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [showTagPicker, setShowTagPicker] = useState(false);
     const [tagSearch, setTagSearch] = useState('');
-    const pendingRef = useRef<{ title: string; description: string } | null>(null);
+    const [taskTags, setTaskTags] = useState<Tag[]>([]);
+    const pendingRef = useRef<{ title: string; description: string } | null>(
+        null,
+    );
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const titleRef = useRef<HTMLInputElement>(null);
     const taskRef = useRef(task);
-
-    const tagSync = useHttp<{ tag_ids: number[] }>({ tag_ids: [] });
-    const tagCreate = useHttp<{ name: string; color: string }, Tag>({ name: '', color: '' });
+    const taskTagsRef = useRef<Tag[]>(task?.tags ?? []);
 
     const isOpen = task !== null && anchorPoint !== null;
 
@@ -41,6 +55,12 @@ export function TaskEditPopover({ task, anchorPoint, tags, onClose, onTagCreated
 
     const prevTaskIdRef = useRef<number | null>(null);
     useEffect(() => {
+        const nextTaskTags = task?.tags ?? [];
+        taskTagsRef.current = nextTaskTags;
+        // The popover keeps a local optimistic tag view and must reset it when the active task payload changes.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTaskTags(nextTaskTags);
+
         if (task && task.id !== prevTaskIdRef.current) {
             prevTaskIdRef.current = task.id;
             setTitle(task.title);
@@ -53,6 +73,12 @@ export function TaskEditPopover({ task, anchorPoint, tags, onClose, onTagCreated
             prevTaskIdRef.current = null;
         }
     }, [task]);
+
+    const pickerTags = useMemo(() => {
+        const taskTagsById = new Map(taskTags.map((tag) => [tag.id, tag]));
+
+        return tags.map((tag) => taskTagsById.get(tag.id) ?? tag);
+    }, [tags, taskTags]);
 
     useEffect(() => {
         if (isOpen) {
@@ -72,11 +98,16 @@ export function TaskEditPopover({ task, anchorPoint, tags, onClose, onTagCreated
             if (pendingRef.current.title !== currentTask.title) {
                 data.title = pendingRef.current.title;
             }
-            if (pendingRef.current.description !== (currentTask.description ?? '')) {
+            if (
+                pendingRef.current.description !==
+                (currentTask.description ?? '')
+            ) {
                 data.description = pendingRef.current.description;
             }
             if (Object.keys(data).length > 0) {
-                router.patch(TaskController.update.url(currentTask.id), data, { preserveScroll: true });
+                router.patch(TaskController.update.url(currentTask.id), data, {
+                    preserveScroll: true,
+                });
             }
             pendingRef.current = null;
         }
@@ -84,7 +115,10 @@ export function TaskEditPopover({ task, anchorPoint, tags, onClose, onTagCreated
 
     const scheduleSave = useCallback(
         (newTitle: string, newDescription: string) => {
-            pendingRef.current = { title: newTitle, description: newDescription };
+            pendingRef.current = {
+                title: newTitle,
+                description: newDescription,
+            };
             if (debounceRef.current) {
                 clearTimeout(debounceRef.current);
             }
@@ -118,7 +152,9 @@ export function TaskEditPopover({ task, anchorPoint, tags, onClose, onTagCreated
             debounceRef.current = null;
         }
         pendingRef.current = null;
-        router.delete(TaskController.destroy.url(currentTask.id), { preserveScroll: true });
+        router.delete(TaskController.destroy.url(currentTask.id), {
+            preserveScroll: true,
+        });
         onClose();
     };
 
@@ -126,48 +162,123 @@ export function TaskEditPopover({ task, anchorPoint, tags, onClose, onTagCreated
         (tagId: number) => {
             const currentTask = taskRef.current;
             if (!currentTask) return;
-            const currentIds = currentTask.tags.map((t) => t.id);
-            const newIds = currentIds.includes(tagId) ? currentIds.filter((id) => id !== tagId) : [...currentIds, tagId];
-            tagSync.setData('tag_ids', newIds);
-            tagSync.patch(TaskTagController.sync.url(currentTask.id), {
-                onSuccess: () => router.reload(),
-            });
+            const previousTags = taskTagsRef.current;
+            const currentIds = previousTags.map((tag) => tag.id);
+            const newIds = currentIds.includes(tagId)
+                ? currentIds.filter((id) => id !== tagId)
+                : [...currentIds, tagId];
+            const nextTags = tags.filter((tag) => newIds.includes(tag.id));
+
+            taskTagsRef.current = nextTags;
+            setTaskTags(nextTags);
+
+            void requestJson<Tag[]>(
+                'patch',
+                TaskTagController.sync.url(currentTask.id),
+                { tag_ids: newIds },
+            )
+                .then(() => {
+                    router.reload();
+                })
+                .catch(() => {
+                    taskTagsRef.current = previousTags;
+                    setTaskTags(previousTags);
+                });
         },
-        [tagSync],
+        [tags],
     );
 
     const handleCreateTag = useCallback(
         (name: string, color: string) => {
             const currentTask = taskRef.current;
             if (!currentTask) return;
-            tagCreate.setData({ name, color });
-            tagCreate.post(TagController.store.url(), {
-                onSuccess: (response: Tag) => {
+
+            void (async () => {
+                try {
+                    const response = await requestJson<Tag>(
+                        'post',
+                        TagController.store.url(),
+                        { name, color },
+                    );
                     onTagCreated(response);
-                    const currentIds = currentTask.tags.map((t) => t.id);
-                    tagSync.setData('tag_ids', [...currentIds, response.id]);
-                    tagSync.patch(TaskTagController.sync.url(currentTask.id), {
-                        onSuccess: () => router.reload(),
-                    });
-                    setTagSearch('');
-                },
-            });
+                    const previousTags = taskTagsRef.current;
+                    const nextTags = [...previousTags, response];
+
+                    taskTagsRef.current = nextTags;
+                    setTaskTags(nextTags);
+
+                    try {
+                        await requestJson<Tag[]>(
+                            'patch',
+                            TaskTagController.sync.url(currentTask.id),
+                            {
+                                tag_ids: nextTags.map((tag) => tag.id),
+                            },
+                        );
+
+                        setTagSearch('');
+                        router.reload();
+                    } catch {
+                        taskTagsRef.current = previousTags;
+                        setTaskTags(previousTags);
+                    }
+                } catch {
+                    // Leave the current selection alone if tag creation fails.
+                }
+            })();
         },
-        [tagCreate, tagSync, onTagCreated],
+        [onTagCreated],
     );
 
-    const handleRemoveTag = useCallback(
-        (tagId: number) => {
-            const currentTask = taskRef.current;
-            if (!currentTask) return;
-            const newIds = currentTask.tags.filter((t) => t.id !== tagId).map((t) => t.id);
-            tagSync.setData('tag_ids', newIds);
-            tagSync.patch(TaskTagController.sync.url(currentTask.id), {
-                onSuccess: () => router.reload(),
-            });
+    const handleChangeTagColor = useCallback(
+        (tagId: number, color: string) => {
+            const previousTags = taskTagsRef.current;
+            const nextTags = previousTags.map((tag) =>
+                tag.id === tagId ? { ...tag, color } : tag,
+            );
+
+            taskTagsRef.current = nextTags;
+            setTaskTags(nextTags);
+
+            void requestJson<Tag>('patch', TagController.update.url(tagId), {
+                color,
+            })
+                .then((response) => {
+                    onTagUpdated(response);
+                    router.reload();
+                })
+                .catch(() => {
+                    taskTagsRef.current = previousTags;
+                    setTaskTags(previousTags);
+                });
         },
-        [tagSync],
+        [onTagUpdated],
     );
+
+    const handleRemoveTag = useCallback((tagId: number) => {
+        const currentTask = taskRef.current;
+        if (!currentTask) return;
+        const previousTags = taskTagsRef.current;
+        const nextTags = previousTags.filter((tag) => tag.id !== tagId);
+
+        taskTagsRef.current = nextTags;
+        setTaskTags(nextTags);
+
+        void requestJson<Tag[]>(
+            'patch',
+            TaskTagController.sync.url(currentTask.id),
+            {
+                tag_ids: nextTags.map((tag) => tag.id),
+            },
+        )
+            .then(() => {
+                router.reload();
+            })
+            .catch(() => {
+                taskTagsRef.current = previousTags;
+                setTaskTags(previousTags);
+            });
+    }, []);
 
     // Cleanup debounce on unmount
     useEffect(() => {
@@ -179,16 +290,26 @@ export function TaskEditPopover({ task, anchorPoint, tags, onClose, onTagCreated
     }, []);
 
     return (
-        <Popover open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }} modal={false}>
+        <Popover
+            open={isOpen}
+            onOpenChange={(open) => {
+                if (!open) handleClose();
+            }}
+            modal={false}
+        >
             <PopoverAnchor
-                style={anchorPoint ? {
-                    position: 'fixed',
-                    left: anchorPoint.x,
-                    top: anchorPoint.y,
-                    width: 0,
-                    height: 0,
-                    pointerEvents: 'none',
-                } : undefined}
+                style={
+                    anchorPoint
+                        ? {
+                              position: 'fixed',
+                              left: anchorPoint.x,
+                              top: anchorPoint.y,
+                              width: 0,
+                              height: 0,
+                              pointerEvents: 'none',
+                          }
+                        : undefined
+                }
             />
             <PopoverContent
                 side="right"
@@ -206,7 +327,9 @@ export function TaskEditPopover({ task, anchorPoint, tags, onClose, onTagCreated
                             <Input
                                 ref={titleRef}
                                 value={title}
-                                onChange={(e) => handleTitleChange(e.target.value)}
+                                onChange={(e) =>
+                                    handleTitleChange(e.target.value)
+                                }
                                 className="border-0 px-0 text-sm font-semibold shadow-none focus-visible:ring-0"
                                 placeholder="Task title..."
                             />
@@ -216,18 +339,28 @@ export function TaskEditPopover({ task, anchorPoint, tags, onClose, onTagCreated
                         <div className="px-3 pb-1">
                             <textarea
                                 value={description}
-                                onChange={(e) => handleDescriptionChange(e.target.value)}
+                                onChange={(e) =>
+                                    handleDescriptionChange(e.target.value)
+                                }
                                 placeholder="Add a description..."
                                 rows={2}
-                                className="w-full resize-none bg-transparent text-xs text-muted-foreground placeholder:text-muted-foreground/50 outline-none"
+                                className="w-full resize-none bg-transparent text-xs text-muted-foreground outline-none placeholder:text-muted-foreground/50"
                             />
                         </div>
 
                         {/* Tags */}
-                        {task.tags.length > 0 && (
+                        {taskTags.length > 0 && (
                             <div className="flex flex-wrap gap-1 px-3 pb-2">
-                                {task.tags.map((tag) => (
-                                    <TagBadge key={tag.id} tag={tag} size="sm" onRemove={() => handleRemoveTag(tag.id)} />
+                                {taskTags.map((tag) => (
+                                    <TagBadge
+                                        key={tag.id}
+                                        tag={tag}
+                                        size="sm"
+                                        onRemove={() => handleRemoveTag(tag.id)}
+                                        onColorChange={(color) =>
+                                            handleChangeTagColor(tag.id, color)
+                                        }
+                                    />
                                 ))}
                             </div>
                         )}
@@ -261,14 +394,18 @@ export function TaskEditPopover({ task, anchorPoint, tags, onClose, onTagCreated
                                 <div className="px-2 pt-1.5 pb-1">
                                     <Input
                                         value={tagSearch}
-                                        onChange={(e) => setTagSearch(e.target.value)}
+                                        onChange={(e) =>
+                                            setTagSearch(e.target.value)
+                                        }
                                         placeholder="Search or create tag..."
                                         className="h-7 border-0 px-1 text-xs shadow-none focus-visible:ring-0"
                                     />
                                 </div>
                                 <TagPicker
-                                    tags={tags}
-                                    selectedTagIds={task.tags.map((t) => t.id)}
+                                    tags={pickerTags}
+                                    selectedTagIds={taskTags.map(
+                                        (tag) => tag.id,
+                                    )}
                                     onToggle={handleToggleTag}
                                     onCreate={handleCreateTag}
                                     onClose={() => setShowTagPicker(false)}

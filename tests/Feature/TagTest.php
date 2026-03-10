@@ -83,6 +83,37 @@ test('cannot delete another user tag', function () {
         ->assertForbidden();
 });
 
+test('can update a tag color', function () {
+    $user = User::factory()->create();
+    $tag = Tag::factory()->for($user)->create(['color' => TagColor::Blue]);
+
+    $this->actingAs($user)
+        ->patchJson(route('tags.update', $tag), ['color' => 'red'])
+        ->assertOk();
+
+    expect($tag->fresh()->color)->toBe(TagColor::Red);
+});
+
+test('cannot update another user tag color', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $tag = Tag::factory()->for($otherUser)->create();
+
+    $this->actingAs($user)
+        ->patchJson(route('tags.update', $tag), ['color' => 'red'])
+        ->assertForbidden();
+});
+
+test('color must be a valid enum value', function () {
+    $user = User::factory()->create();
+    $tag = Tag::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->patchJson(route('tags.update', $tag), ['color' => 'invalid-color'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('color');
+});
+
 test('can sync tags on a task', function () {
     $user = User::factory()->create();
     $task = Task::factory()->for($user)->create();
