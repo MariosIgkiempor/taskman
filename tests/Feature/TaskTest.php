@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Tag;
 use App\Models\Task;
 use App\Models\User;
 
@@ -175,6 +176,27 @@ test('index with invalid week param returns validation error', function () {
     $this->actingAs($user)
         ->get(route('tasks.index', ['week' => 'not-a-date']))
         ->assertRedirect();
+});
+
+test('index returns scheduled tasks with their tags', function () {
+    $user = User::factory()->create();
+    $tag = Tag::factory()->for($user)->create();
+
+    $thisWeek = now()->startOfWeek()->addDay()->setHour(10);
+    $task = Task::factory()->for($user)->create([
+        'scheduled_at' => $thisWeek,
+    ]);
+    $task->tags()->attach($tag);
+
+    $response = $this->actingAs($user)
+        ->get(route('tasks.index'))
+        ->assertOk();
+
+    $props = $response->original->getData()['page']['props'];
+
+    expect($props['scheduledTasks'])->toHaveCount(1);
+    expect($props['scheduledTasks'][0]['tags'])->toHaveCount(1);
+    expect($props['scheduledTasks'][0]['tags'][0]['id'])->toBe($tag->id);
 });
 
 test('index returns separated unscheduled and scheduled tasks', function () {

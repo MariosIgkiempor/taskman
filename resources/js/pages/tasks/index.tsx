@@ -80,6 +80,7 @@ export default function TasksIndex({
                     <TaskSidebar
                         ref={sidebarRef}
                         tasks={unscheduledTasks}
+                        scheduledTasks={scheduledTasks}
                         tags={localTags}
                         onTagCreated={handleTagCreated}
                         onTaskClick={handleTaskClick}
