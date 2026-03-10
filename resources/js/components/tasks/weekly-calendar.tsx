@@ -29,6 +29,7 @@ export function WeeklyCalendar({
     onTaskClick,
 }: WeeklyCalendarProps) {
     const calendarRef = useRef<FullCalendar>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const draggableRef = useRef<Draggable | null>(null);
     const tasksRef = useRef(tasks);
 
@@ -38,6 +39,21 @@ export function WeeklyCalendar({
             calendarApi.gotoDate(weekStart);
         }
     }, [weekStart]);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        const calendarApi = calendarRef.current?.getApi();
+        if (!container || !calendarApi) {
+            return;
+        }
+
+        const observer = new ResizeObserver(() => {
+            calendarApi.updateSize();
+        });
+        observer.observe(container);
+
+        return () => observer.disconnect();
+    }, []);
 
     useEffect(() => {
         if (!sidebarRef.current) {
@@ -201,7 +217,7 @@ export function WeeklyCalendar({
     };
 
     return (
-        <div className="h-full overflow-hidden rounded-lg bg-card [&_.fc]:h-full">
+        <div ref={containerRef} className="h-full overflow-hidden rounded-lg bg-card [&_.fc]:h-full">
             <FullCalendar
                 ref={calendarRef}
                 plugins={[timeGridPlugin, interactionPlugin]}
