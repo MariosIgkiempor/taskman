@@ -40,6 +40,10 @@ export default function TasksIndex({
         setLocalTags(tags);
     }, [tags]);
 
+    useEffect(() => {
+        handleCloseEdit();
+    }, [currentWeekStart]);
+
     const handleTagCreated = useCallback((tag: Tag) => {
         setLocalTags((prev) =>
             [...prev, tag].sort((a, b) => a.name.localeCompare(b.name)),

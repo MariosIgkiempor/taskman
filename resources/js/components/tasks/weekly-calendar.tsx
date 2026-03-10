@@ -29,6 +29,7 @@ export function WeeklyCalendar({
     const calendarRef = useRef<FullCalendar>(null);
     const draggableRef = useRef<Draggable | null>(null);
     const tasksRef = useRef(tasks);
+    tasksRef.current = tasks;
 
     useEffect(() => {
         const calendarApi = calendarRef.current?.getApi();
