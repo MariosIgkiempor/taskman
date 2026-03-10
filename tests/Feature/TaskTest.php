@@ -318,4 +318,31 @@ test('index returns separated unscheduled and scheduled tasks', function () {
 
     expect($props['unscheduledTasks'])->toHaveCount(2);
     expect($props['scheduledTasks'])->toHaveCount(3);
+    expect($props['completedTasks'])->toHaveCount(0);
+});
+
+test('completed tasks appear in completedTasks regardless of schedule status', function () {
+    $user = User::factory()->create();
+
+    // Incomplete unscheduled task
+    Task::factory()->for($user)->create();
+
+    // Completed unscheduled task
+    Task::factory()->for($user)->create(['is_completed' => true]);
+
+    // Completed scheduled task
+    $thisWeek = now()->startOfWeek()->addDay()->setHour(10);
+    Task::factory()->for($user)->create([
+        'scheduled_at' => $thisWeek,
+        'is_completed' => true,
+    ]);
+
+    $response = $this->actingAs($user)
+        ->get(route('tasks.index'))
+        ->assertOk();
+
+    $props = $response->original->getData()['page']['props'];
+
+    expect($props['unscheduledTasks'])->toHaveCount(1);
+    expect($props['completedTasks'])->toHaveCount(2);
 });

@@ -23,8 +23,9 @@ class TaskController extends Controller
         )->startOfWeek();
 
         return Inertia::render('tasks/index', [
-            'unscheduledTasks' => $user->tasks()->with(['tags', 'reminders'])->unscheduled()->orderBy('is_completed', 'asc')->orderBy('position')->orderBy('created_at', 'desc')->get(),
+            'unscheduledTasks' => $user->tasks()->with(['tags', 'reminders'])->unscheduled()->where('is_completed', false)->orderBy('position')->orderBy('created_at', 'desc')->get(),
             'scheduledTasks' => $user->tasks()->with(['tags', 'reminders'])->scheduled()->forWeek($weekStart)->orderBy('scheduled_at')->get(),
+            'completedTasks' => $user->tasks()->with(['tags', 'reminders'])->where('is_completed', true)->latest()->get(),
             'currentWeekStart' => $weekStart->toDateString(),
             'tags' => $user->tags()->orderBy('name')->get(),
         ]);
