@@ -6,9 +6,12 @@ import { TagTimeBreakdown } from '@/components/tasks/tag-time-breakdown';
 import { TaskCard } from '@/components/tasks/task-card';
 import { TaskCreatePopover } from '@/components/tasks/task-create-popover';
 import { TaskForm } from '@/components/tasks/task-form';
-import type { Tag, Task } from '@/types';
+import type { Board, Tag, Task, Workspace } from '@/types';
 
 interface TaskSidebarProps {
+    workspace: Workspace;
+    boards: Board[];
+    selectedBoardId: number | null;
     tasks: Task[];
     scheduledTasks: Task[];
     completedTasks: Task[];
@@ -22,6 +25,9 @@ interface TaskSidebarProps {
 export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
     function TaskSidebar(
         {
+            workspace,
+            boards,
+            selectedBoardId,
             tasks,
             scheduledTasks,
             completedTasks,
@@ -90,6 +96,9 @@ export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(
                     <TaskCreatePopover
                         isOpen={createOpen}
                         anchorRect={createAnchorRect}
+                        workspace={workspace}
+                        boards={boards}
+                        selectedBoardId={selectedBoardId}
                         tags={tags}
                         onClose={handleCloseCreate}
                         onTagCreated={onTagCreated}

@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { index as tasksIndex } from '@/routes/tasks';
@@ -8,6 +8,7 @@ interface WeekNavigatorProps {
 }
 
 export function WeekNavigator({ weekStart }: WeekNavigatorProps) {
+    const { currentWorkspace } = usePage().props;
     const [y, m, d] = weekStart.split('-').map(Number);
     const start = new Date(y, m - 1, d);
     const end = new Date(y, m - 1, d);
@@ -40,7 +41,7 @@ export function WeekNavigator({ weekStart }: WeekNavigatorProps) {
         target.setDate(target.getDate() + (direction === 'prev' ? -7 : 7));
         const weekParam = target.toISOString().split('T')[0];
         router.get(
-            tasksIndex(),
+            tasksIndex.url(currentWorkspace),
             { week: weekParam },
             { preserveState: true, preserveScroll: true },
         );
@@ -48,7 +49,7 @@ export function WeekNavigator({ weekStart }: WeekNavigatorProps) {
 
     const goToToday = () => {
         router.get(
-            tasksIndex(),
+            tasksIndex.url(currentWorkspace),
             {},
             { preserveState: true, preserveScroll: true },
         );

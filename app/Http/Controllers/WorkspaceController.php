@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\WorkspaceRole;
 use App\Http\Requests\Workspace\StoreWorkspaceRequest;
 use App\Http\Requests\Workspace\UpdateWorkspaceRequest;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,6 +34,36 @@ class WorkspaceController extends Controller
         $workspace->boards()->create(['name' => 'General', 'position' => 0]);
 
         return redirect()->route('tasks.index', $workspace);
+    }
+
+    public function settings(Request $request, Workspace $workspace): Response
+    {
+        Gate::authorize('view', $workspace);
+
+        return Inertia::render('workspaces/settings', [
+            'workspace' => $workspace,
+            'role' => $workspace->roleFor($request->user())->value,
+        ]);
+    }
+
+    public function members(Request $request, Workspace $workspace): Response
+    {
+        Gate::authorize('view', $workspace);
+
+        return Inertia::render('workspaces/members', [
+            'workspace' => $workspace,
+            'members' => $workspace->members()
+                ->select('users.id', 'users.name', 'users.email')
+                ->get()
+                ->map(fn (User $user) => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->pivot->role,
+                ]),
+            'invites' => $workspace->invites()->latest()->get(),
+            'role' => $workspace->roleFor($request->user())->value,
+        ]);
     }
 
     public function update(UpdateWorkspaceRequest $request, Workspace $workspace): RedirectResponse

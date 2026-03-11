@@ -9,16 +9,17 @@ import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { router } from '@inertiajs/react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import { TaskCheckbox } from '@/components/ui/task-checkbox';
 import { tagColors } from '@/lib/tag-colors';
-import type { Tag, Task } from '@/types';
+import type { Board, Tag, Task } from '@/types';
 
 const SHADOW_EVENT_ID = 'duplicate-shadow';
 
 interface WeeklyCalendarProps {
     tasks: Task[];
+    boards: Board[];
     weekStart: string;
     sidebarRef: React.RefObject<HTMLDivElement | null>;
     selectedTagIds: Set<number>;
@@ -28,12 +29,22 @@ interface WeeklyCalendarProps {
 
 export function WeeklyCalendar({
     tasks,
+    boards,
     weekStart,
     sidebarRef,
     selectedTagIds,
     onTaskClick,
     onScheduledWithNotifiedReminders,
 }: WeeklyCalendarProps) {
+    const boardColorMap = useMemo(() => {
+        const map = new Map<number, string>();
+        for (const board of boards) {
+            if (board.color) {
+                map.set(board.id, board.color);
+            }
+        }
+        return map;
+    }, [boards]);
     const calendarRef = useRef<FullCalendar>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const draggableRef = useRef<Draggable | null>(null);
@@ -168,6 +179,7 @@ export function WeeklyCalendar({
             ).toISOString(),
             extendedProps: {
                 taskId: task.id,
+                boardId: task.board_id,
                 isCompleted: task.is_completed,
                 tags: task.tags,
             },
@@ -367,11 +379,16 @@ export function WeeklyCalendar({
     const renderEventContent = (eventInfo: EventContentArg) => {
         const eventTags = (eventInfo.event.extendedProps.tags ?? []) as Tag[];
         const taskId = eventInfo.event.extendedProps.taskId as number;
+        const boardId = eventInfo.event.extendedProps.boardId as number;
         const isCompleted =
             eventInfo.event.extendedProps.isCompleted as boolean;
+        const boardColor = boardColorMap.get(boardId);
 
         return (
-            <div className="flex flex-col gap-0.5 overflow-hidden">
+            <div
+                className="flex flex-col gap-0.5 overflow-hidden"
+                style={boardColor ? { borderLeft: `3px solid ${boardColor}`, paddingLeft: 4 } : undefined}
+            >
                 <div className="fc-event-time text-[0.6875rem] font-medium opacity-70">
                     {eventInfo.timeText}
                 </div>

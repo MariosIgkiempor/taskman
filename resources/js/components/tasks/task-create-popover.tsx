@@ -14,11 +14,14 @@ import {
     PopoverContent,
 } from '@/components/ui/popover';
 import { requestJson } from '@/lib/request-json';
-import type { Tag } from '@/types';
+import type { Board, Tag, Workspace } from '@/types';
 
 interface TaskCreatePopoverProps {
     isOpen: boolean;
     anchorRect: DOMRect | null;
+    workspace: Workspace;
+    boards: Board[];
+    selectedBoardId: number | null;
     tags: Tag[];
     onClose: () => void;
     onTagCreated: (tag: Tag) => void;
@@ -27,6 +30,9 @@ interface TaskCreatePopoverProps {
 export function TaskCreatePopover({
     isOpen,
     anchorRect,
+    workspace,
+    boards,
+    selectedBoardId,
     tags,
     onClose,
     onTagCreated,
@@ -61,6 +67,9 @@ export function TaskCreatePopover({
             >
                 {isOpen && (
                     <TaskCreateForm
+                        workspace={workspace}
+                        boards={boards}
+                        selectedBoardId={selectedBoardId}
                         tags={tags}
                         onClose={onClose}
                         onTagCreated={onTagCreated}
@@ -72,23 +81,29 @@ export function TaskCreatePopover({
 }
 
 interface TaskCreateFormProps {
+    workspace: Workspace;
+    boards: Board[];
+    selectedBoardId: number | null;
     tags: Tag[];
     onClose: () => void;
     onTagCreated: (tag: Tag) => void;
 }
 
-function TaskCreateForm({ tags, onClose, onTagCreated }: TaskCreateFormProps) {
+function TaskCreateForm({ workspace, boards, selectedBoardId, tags, onClose, onTagCreated }: TaskCreateFormProps) {
+    const defaultBoardId = selectedBoardId ?? boards[0]?.id;
     const form = useForm<{
         title: string;
         description: string;
         location: string;
         location_coordinates: { lat: number; lng: number } | null;
+        board_id: number;
         tag_ids: number[];
     }>({
         title: '',
         description: '',
         location: '',
         location_coordinates: null,
+        board_id: defaultBoardId,
         tag_ids: [],
     });
     const [showTagPicker, setShowTagPicker] = useState(false);
@@ -102,7 +117,7 @@ function TaskCreateForm({ tags, onClose, onTagCreated }: TaskCreateFormProps) {
 
     const handleSubmit = () => {
         if (!form.data.title.trim()) return;
-        form.post(TaskController.store.url(), {
+        form.post(TaskController.store.url(workspace), {
             preserveScroll: true,
             onSuccess: () => {
                 onClose();
@@ -136,7 +151,7 @@ function TaskCreateForm({ tags, onClose, onTagCreated }: TaskCreateFormProps) {
                 try {
                     const response = await requestJson<Tag>(
                         'post',
-                        TagController.store.url(),
+                        TagController.store.url(workspace),
                         { name, color },
                     );
                     onTagCreated(response);
@@ -211,6 +226,25 @@ function TaskCreateForm({ tags, onClose, onTagCreated }: TaskCreateFormProps) {
                     placeholder="Add a location..."
                 />
             </div>
+
+            {/* Board selector */}
+            {boards.length > 1 && (
+                <div className="px-3 pb-1">
+                    <select
+                        value={form.data.board_id}
+                        onChange={(e) =>
+                            form.setData('board_id', Number(e.target.value))
+                        }
+                        className="w-full rounded-md border-0 bg-muted/50 px-2 py-1 text-xs text-muted-foreground outline-none"
+                    >
+                        {boards.map((board) => (
+                            <option key={board.id} value={board.id}>
+                                {board.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
 
             {/* Tags */}
             {selectedTags.length > 0 && (

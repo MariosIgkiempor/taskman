@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowRight, CalendarDays, CheckCircle2, ListTodo } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
@@ -13,6 +13,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Dashboard() {
+    const { currentWorkspace, workspaces } = usePage().props;
+    const ws = currentWorkspace ?? workspaces[0];
+    const tasksHref = ws ? tasksIndex.url(ws) : dashboard();
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
@@ -77,7 +81,7 @@ export default function Dashboard() {
                 </div>
 
                 <Link
-                    href={tasksIndex()}
+                    href={tasksHref}
                     className="group flex items-center gap-2 self-start rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
                 >
                     Go to Tasks

@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import TaskReminderController from '@/actions/App/Http/Controllers/TaskReminderController';
+import { BoardTabs } from '@/components/tasks/board-tabs';
 import { TaskEditPopover } from '@/components/tasks/task-edit-popover';
 import { TaskSidebar } from '@/components/tasks/task-sidebar';
 import { WeekNavigator } from '@/components/tasks/week-navigator';
@@ -16,17 +17,12 @@ import {
 } from '@/components/ui/dialog';
 import { requestJson } from '@/lib/request-json';
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem, Tag, Task } from '@/types';
+import type { Board, BreadcrumbItem, Tag, Task, Workspace } from '@/types';
 import { index as tasksIndex } from '@/routes/tasks';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Tasks',
-        href: tasksIndex(),
-    },
-];
-
 interface Props {
+    workspace: Workspace;
+    boards: Board[];
     unscheduledTasks: Task[];
     scheduledTasks: Task[];
     completedTasks: Task[];
@@ -35,18 +31,28 @@ interface Props {
 }
 
 export default function TasksIndex({
+    workspace,
+    boards,
     unscheduledTasks,
     scheduledTasks,
     completedTasks,
     currentWeekStart,
     tags,
 }: Props) {
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: workspace.name,
+            href: tasksIndex.url(workspace),
+        },
+    ];
+
     const sidebarRef = useRef<HTMLDivElement>(null);
     const [localTags, setLocalTags] = useState<Tag[]>(tags);
     const [prevTags, setPrevTags] = useState<Tag[]>(tags);
     const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(
         new Set(),
     );
+    const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [anchorPoint, setAnchorPoint] = useState<{
         x: number;
@@ -70,6 +76,22 @@ export default function TasksIndex({
             return next.size === prev.size ? prev : next;
         });
     }
+
+    const filteredUnscheduledTasks = useMemo(
+        () =>
+            selectedBoardId === null
+                ? unscheduledTasks
+                : unscheduledTasks.filter((t) => t.board_id === selectedBoardId),
+        [unscheduledTasks, selectedBoardId],
+    );
+
+    const filteredCompletedTasks = useMemo(
+        () =>
+            selectedBoardId === null
+                ? completedTasks
+                : completedTasks.filter((t) => t.board_id === selectedBoardId),
+        [completedTasks, selectedBoardId],
+    );
 
     const handleTagCreated = useCallback((tag: Tag) => {
         setLocalTags((prev) =>
@@ -132,11 +154,21 @@ export default function TasksIndex({
             <Head title="Tasks" />
             <div className="grid min-h-0 flex-1 grid-cols-[320px_1fr] gap-0 p-0">
                 <div className="flex min-h-0 flex-col border-r border-border/40 p-4">
+                    <div className="mb-3 shrink-0">
+                        <BoardTabs
+                            boards={boards}
+                            selectedBoardId={selectedBoardId}
+                            onSelectBoard={setSelectedBoardId}
+                        />
+                    </div>
                     <TaskSidebar
                         ref={sidebarRef}
-                        tasks={unscheduledTasks}
+                        workspace={workspace}
+                        boards={boards}
+                        selectedBoardId={selectedBoardId}
+                        tasks={filteredUnscheduledTasks}
                         scheduledTasks={scheduledTasks}
-                        completedTasks={completedTasks}
+                        completedTasks={filteredCompletedTasks}
                         tags={localTags}
                         selectedTagIds={selectedTagIds}
                         onTagFilterToggle={handleTagFilterToggle}
@@ -149,6 +181,7 @@ export default function TasksIndex({
                     <div className="min-h-0 flex-1">
                         <WeeklyCalendar
                             tasks={scheduledTasks}
+                            boards={boards}
                             weekStart={currentWeekStart}
                             sidebarRef={sidebarRef}
                             selectedTagIds={selectedTagIds}
@@ -161,6 +194,7 @@ export default function TasksIndex({
             <TaskEditPopover
                 task={currentEditingTask}
                 anchorPoint={anchorPoint}
+                workspace={workspace}
                 tags={localTags}
                 onClose={handleCloseEdit}
                 onTagCreated={handleTagCreated}

@@ -13,6 +13,7 @@ export type TaskReminder = {
 
 export type Task = {
     id: number;
+    board_id: number;
     title: string;
     description: string | null;
     scheduled_at: string | null;

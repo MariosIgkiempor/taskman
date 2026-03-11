@@ -23,7 +23,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { requestJson } from '@/lib/request-json';
-import type { Tag, Task } from '@/types';
+import type { Tag, Task, Workspace } from '@/types';
 
 const DURATION_OPTIONS = [
     { value: '15', label: '15m' },
@@ -42,6 +42,7 @@ const DURATION_OPTIONS = [
 interface TaskEditPopoverProps {
     task: Task | null;
     anchorPoint: { x: number; y: number } | null;
+    workspace: Workspace;
     tags: Tag[];
     onClose: () => void;
     onTagCreated: (tag: Tag) => void;
@@ -52,6 +53,7 @@ interface TaskEditPopoverProps {
 export function TaskEditPopover({
     task,
     anchorPoint,
+    workspace,
     tags,
     onClose,
     onTagCreated,
@@ -99,6 +101,7 @@ export function TaskEditPopover({
                     <TaskEditForm
                         key={task.id}
                         task={task}
+                        workspace={workspace}
                         tags={tags}
                         onClose={onClose}
                         onTagCreated={onTagCreated}
@@ -113,6 +116,7 @@ export function TaskEditPopover({
 
 interface TaskEditFormProps {
     task: Task;
+    workspace: Workspace;
     tags: Tag[];
     onClose: () => void;
     onTagCreated: (tag: Tag) => void;
@@ -122,6 +126,7 @@ interface TaskEditFormProps {
 
 function TaskEditForm({
     task,
+    workspace,
     tags,
     onClose,
     onTagCreated,
@@ -398,7 +403,7 @@ function TaskEditForm({
                 try {
                     const response = await requestJson<Tag>(
                         'post',
-                        TagController.store.url(),
+                        TagController.store.url(workspace),
                         { name, color },
                     );
                     onTagCreated(response);
