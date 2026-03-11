@@ -1,12 +1,11 @@
 import { router } from '@inertiajs/react';
-import { Bell, Calendar, Check, Circle, Clock, Globe, Tag as TagIcon, Trash2, X } from 'lucide-react';
+import { Bell, Calendar, Check, Circle, Clock, Globe, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TagController from '@/actions/App/Http/Controllers/TagController';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import TaskTagController from '@/actions/App/Http/Controllers/TaskTagController';
 import { LocationInput } from '@/components/location-input';
-import { TagBadge } from '@/components/tags/tag-badge';
-import { TagPicker } from '@/components/tags/tag-picker';
+import { TaskTagInput } from '@/components/tags/task-tag-input';
 import { ReminderPicker } from '@/components/tasks/reminder-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -151,9 +150,7 @@ function TaskEditForm({
     const [locationCoordinates, setLocationCoordinates] = useState(
         task.location_coordinates,
     );
-    const [showTagPicker, setShowTagPicker] = useState(false);
     const [showReminderPicker, setShowReminderPicker] = useState(false);
-    const [tagSearch, setTagSearch] = useState('');
     const [taskTags, setTaskTags] = useState<Tag[]>(task.tags);
     const pendingRef = useRef<{ title: string; description: string } | null>(
         null,
@@ -403,7 +400,9 @@ function TaskEditForm({
                     );
                     onTagCreated(response);
                     const previousTags = taskTagsRef.current;
-                    const nextTags = [...previousTags, response];
+                    const nextTags = [...previousTags, response].sort((a, b) =>
+                        a.name.localeCompare(b.name),
+                    );
 
                     taskTagsRef.current = nextTags;
                     setTaskTags(nextTags);
@@ -417,7 +416,6 @@ function TaskEditForm({
                             },
                         );
 
-                        setTagSearch('');
                         router.reload();
                     } catch {
                         taskTagsRef.current = previousTags;
@@ -542,21 +540,15 @@ function TaskEditForm({
             </div>
 
             {/* Tags */}
-            {taskTags.length > 0 && (
-                <div className="flex flex-wrap gap-1 px-3 pb-2">
-                    {taskTags.map((tag) => (
-                        <TagBadge
-                            key={tag.id}
-                            tag={tag}
-                            size="sm"
-                            onRemove={() => handleRemoveTag(tag.id)}
-                            onColorChange={(color) =>
-                                handleChangeTagColor(tag.id, color)
-                            }
-                        />
-                    ))}
-                </div>
-            )}
+            <div className="px-3 pb-1">
+                <TaskTagInput
+                    taskTags={taskTags}
+                    allTags={pickerTags}
+                    onTagAdd={handleToggleTag}
+                    onTagRemove={handleRemoveTag}
+                    onTagCreate={handleCreateTag}
+                />
+            </div>
 
             {/* Schedule */}
             <div className="flex flex-col gap-1.5 border-t border-border/50 px-3 py-2">
@@ -611,15 +603,6 @@ function TaskEditForm({
                 <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
-                    onClick={() => setShowTagPicker(!showTagPicker)}
-                >
-                    <TagIcon className="size-3" />
-                    Tags
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
                     className={`h-7 gap-1.5 px-2 text-xs ${task.reminders.length > 0 ? 'text-primary' : 'text-muted-foreground'}`}
                     onClick={() => setShowReminderPicker(!showReminderPicker)}
                     disabled={!task.scheduled_at}
@@ -640,29 +623,6 @@ function TaskEditForm({
                     </Button>
                 )}
             </div>
-
-            {/* Inline tag picker */}
-            {showTagPicker && (
-                <div className="border-t border-border/50">
-                    <div className="px-2 pt-1.5 pb-1">
-                        <Input
-                            value={tagSearch}
-                            onChange={(e) => setTagSearch(e.target.value)}
-                            placeholder="Search or create tag..."
-                            className="h-7 border-0 px-1 text-xs shadow-none focus-visible:ring-0"
-                        />
-                    </div>
-                    <TagPicker
-                        tags={pickerTags}
-                        selectedTagIds={taskTags.map((tag) => tag.id)}
-                        onToggle={handleToggleTag}
-                        onCreate={handleCreateTag}
-                        onClose={() => setShowTagPicker(false)}
-                        searchQuery={tagSearch}
-                        inline
-                    />
-                </div>
-            )}
 
             {/* Inline reminder picker */}
             {showReminderPicker && task.scheduled_at && (

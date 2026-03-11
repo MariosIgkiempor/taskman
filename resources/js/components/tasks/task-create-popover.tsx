@@ -1,11 +1,10 @@
 import { useForm } from '@inertiajs/react';
-import { Plus, Tag as TagIcon } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Plus } from 'lucide-react';
+import { useCallback, useEffect, useRef } from 'react';
 import TagController from '@/actions/App/Http/Controllers/TagController';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import { LocationInput } from '@/components/location-input';
-import { TagBadge } from '@/components/tags/tag-badge';
-import { TagPicker } from '@/components/tags/tag-picker';
+import { TaskTagInput } from '@/components/tags/task-tag-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -91,8 +90,6 @@ function TaskCreateForm({ tags, onClose, onTagCreated }: TaskCreateFormProps) {
         location_coordinates: null,
         tag_ids: [],
     });
-    const [showTagPicker, setShowTagPicker] = useState(false);
-    const [tagSearch, setTagSearch] = useState('');
     const titleRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -144,7 +141,6 @@ function TaskCreateForm({ tags, onClose, onTagCreated }: TaskCreateFormProps) {
                         ...current,
                         tag_ids: [...current.tag_ids, response.id],
                     }));
-                    setTagSearch('');
                 } catch {
                     // Keep the current form state if tag creation fails.
                 }
@@ -213,30 +209,18 @@ function TaskCreateForm({ tags, onClose, onTagCreated }: TaskCreateFormProps) {
             </div>
 
             {/* Tags */}
-            {selectedTags.length > 0 && (
-                <div className="flex flex-wrap gap-1 px-3 pb-2">
-                    {selectedTags.map((tag) => (
-                        <TagBadge
-                            key={tag.id}
-                            tag={tag}
-                            size="sm"
-                            onRemove={() => handleRemoveTag(tag.id)}
-                        />
-                    ))}
-                </div>
-            )}
+            <div className="px-3 pb-1">
+                <TaskTagInput
+                    taskTags={selectedTags}
+                    allTags={tags}
+                    onTagAdd={handleToggleTag}
+                    onTagRemove={handleRemoveTag}
+                    onTagCreate={handleCreateTag}
+                />
+            </div>
 
             {/* Actions bar */}
             <div className="flex items-center gap-1 border-t border-border/50 px-2 py-1.5">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
-                    onClick={() => setShowTagPicker(!showTagPicker)}
-                >
-                    <TagIcon className="size-3" />
-                    Tags
-                </Button>
                 <div className="flex-1" />
                 <Button
                     variant="ghost"
@@ -250,28 +234,6 @@ function TaskCreateForm({ tags, onClose, onTagCreated }: TaskCreateFormProps) {
                 </Button>
             </div>
 
-            {/* Inline tag picker */}
-            {showTagPicker && (
-                <div className="border-t border-border/50">
-                    <div className="px-2 pt-1.5 pb-1">
-                        <Input
-                            value={tagSearch}
-                            onChange={(e) => setTagSearch(e.target.value)}
-                            placeholder="Search or create tag..."
-                            className="h-7 border-0 px-1 text-xs shadow-none focus-visible:ring-0"
-                        />
-                    </div>
-                    <TagPicker
-                        tags={tags}
-                        selectedTagIds={form.data.tag_ids}
-                        onToggle={handleToggleTag}
-                        onCreate={handleCreateTag}
-                        onClose={() => setShowTagPicker(false)}
-                        searchQuery={tagSearch}
-                        inline
-                    />
-                </div>
-            )}
         </div>
     );
 }
