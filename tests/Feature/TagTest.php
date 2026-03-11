@@ -174,3 +174,25 @@ test('tasks index includes tags via eager loading', function () {
     expect($props['unscheduledTasks'][0]['tags'])->toHaveCount(1);
     expect($props['tags'])->toHaveCount(1);
 });
+
+test('cannot sync tags from another workspace onto a task', function () {
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->create();
+    $otherTag = Tag::factory()->for($otherUser->personalWorkspace)->create();
+
+    $this->actingAs($user)
+        ->patchJson(route('tasks.tags.sync', $task), ['tag_ids' => [$otherTag->id]])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('tag_ids.0');
+});
+
+test('cannot list tags of workspace user is not a member of', function () {
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+
+    $this->actingAs($user)
+        ->getJson(route('tags.index', $otherUser->personalWorkspace))
+        ->assertForbidden();
+});

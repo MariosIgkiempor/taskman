@@ -435,3 +435,40 @@ test('duplicate requires scheduled_at', function () {
         ->post(route('tasks.duplicate', $task), [])
         ->assertSessionHasErrors('scheduled_at');
 });
+
+test('cannot access tasks index of workspace user is not a member of', function () {
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+
+    $this->actingAs($user)
+        ->get(route('tasks.index', $otherUser->personalWorkspace))
+        ->assertForbidden();
+});
+
+test('task store rejects board_id from another workspace', function () {
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+    $otherBoard = $otherUser->personalWorkspace->boards()->first();
+
+    $this->actingAs($user)
+        ->post(route('tasks.store', $user->personalWorkspace), [
+            'title' => 'Cross-workspace task',
+            'board_id' => $otherBoard->id,
+        ])
+        ->assertSessionHasErrors('board_id');
+});
+
+test('task store rejects tag_ids from another workspace', function () {
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $otherTag = Tag::factory()->for($otherUser->personalWorkspace)->create();
+
+    $this->actingAs($user)
+        ->post(route('tasks.store', $user->personalWorkspace), [
+            'title' => 'Cross-workspace tag task',
+            'board_id' => $board->id,
+            'tag_ids' => [$otherTag->id],
+        ])
+        ->assertSessionHasErrors('tag_ids.0');
+});
