@@ -25,7 +25,7 @@ export function TaskTagInput({
 }: TaskTagInputProps) {
     const [query, setQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
-    const [highlightIndex, setHighlightIndex] = useState(0);
+    const [rawHighlightIndex, setHighlightIndex] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
     const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -55,19 +55,8 @@ export function TaskTagInput({
     // Total items: suggestions + optional "Create" row
     const totalItems = suggestions.length + (showCreate ? 1 : 0);
 
-    // Reset highlight when suggestions change
-    const prevSuggestionsLen = useRef(suggestions.length);
-    const prevShowCreate = useRef(showCreate);
-    if (
-        suggestions.length !== prevSuggestionsLen.current ||
-        showCreate !== prevShowCreate.current
-    ) {
-        prevSuggestionsLen.current = suggestions.length;
-        prevShowCreate.current = showCreate;
-        if (highlightIndex !== 0) {
-            setHighlightIndex(0);
-        }
-    }
+    // Clamp highlight so it stays in bounds when list shrinks
+    const highlightIndex = totalItems > 0 ? Math.min(rawHighlightIndex, totalItems - 1) : 0;
 
     const clearAndClose = useCallback(() => {
         setQuery('');
@@ -173,7 +162,10 @@ export function TaskTagInput({
                     <input
                         ref={inputRef}
                         value={query}
-                        onChange={(e) => setQuery(e.target.value)}
+                        onChange={(e) => {
+                            setQuery(e.target.value);
+                            setHighlightIndex(0);
+                        }}
                         onFocus={handleFocus}
                         onBlur={handleBlur}
                         onKeyDown={handleKeyDown}
