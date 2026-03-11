@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Http\Requests\Task;
+namespace App\Http\Requests\Workspace;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ScheduleTaskRequest extends FormRequest
+class StoreInviteRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('update', $this->route('task'));
+        return $this->user()->can('createInvite', $this->route('workspace'));
     }
 
     /**
@@ -18,8 +18,7 @@ class ScheduleTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'scheduled_at' => ['required', 'date'],
-            'duration_minutes' => ['sometimes', 'integer', 'min:5', 'max:1440'],
+            'expires_at' => ['nullable', 'date', 'after:now'],
         ];
     }
 }

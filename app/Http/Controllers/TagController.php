@@ -5,19 +5,22 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Tag\StoreTagRequest;
 use App\Http\Requests\Tag\UpdateTagRequest;
 use App\Models\Tag;
+use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 
 class TagController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Workspace $workspace): JsonResponse
     {
-        return response()->json(auth()->user()->personalWorkspace->tags()->orderBy('name')->get());
+        Gate::authorize('view', $workspace);
+
+        return response()->json($workspace->tags()->orderBy('name')->get());
     }
 
-    public function store(StoreTagRequest $request): JsonResponse
+    public function store(StoreTagRequest $request, Workspace $workspace): JsonResponse
     {
-        $tag = $request->user()->personalWorkspace->tags()->create($request->validated());
+        $tag = $workspace->tags()->create($request->validated());
 
         return response()->json($tag, 201);
     }

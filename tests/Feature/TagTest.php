@@ -5,8 +5,10 @@ use App\Models\Tag;
 use App\Models\Task;
 
 test('guests cannot access tags', function () {
-    $this->get(route('tags.index'))->assertRedirect(route('login'));
-    $this->post(route('tags.store'))->assertRedirect(route('login'));
+    $workspace = App\Models\Workspace::factory()->create();
+
+    $this->get(route('tags.index', $workspace))->assertRedirect(route('login'));
+    $this->post(route('tags.store', $workspace))->assertRedirect(route('login'));
 });
 
 test('can list tags', function () {
@@ -14,7 +16,7 @@ test('can list tags', function () {
     Tag::factory()->for($user->personalWorkspace)->count(3)->create();
 
     $response = $this->actingAs($user)
-        ->getJson(route('tags.index'))
+        ->getJson(route('tags.index', $user->personalWorkspace))
         ->assertOk();
 
     expect($response->json())->toHaveCount(3);
@@ -24,7 +26,7 @@ test('can create a tag', function () {
     $user = createUserWithWorkspace();
 
     $this->actingAs($user)
-        ->postJson(route('tags.store'), ['name' => 'work', 'color' => 'blue'])
+        ->postJson(route('tags.store', $user->personalWorkspace), ['name' => 'work', 'color' => 'blue'])
         ->assertCreated();
 
     $workspace = $user->personalWorkspace;
@@ -37,7 +39,7 @@ test('creating a tag requires name and color', function () {
     $user = createUserWithWorkspace();
 
     $this->actingAs($user)
-        ->postJson(route('tags.store'), [])
+        ->postJson(route('tags.store', $user->personalWorkspace), [])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['name', 'color']);
 });
@@ -47,7 +49,7 @@ test('tag name must be unique per workspace', function () {
     Tag::factory()->for($user->personalWorkspace)->create(['name' => 'work']);
 
     $this->actingAs($user)
-        ->postJson(route('tags.store'), ['name' => 'work', 'color' => 'red'])
+        ->postJson(route('tags.store', $user->personalWorkspace), ['name' => 'work', 'color' => 'red'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors('name');
 });
@@ -58,7 +60,7 @@ test('different workspaces can have same tag name', function () {
     Tag::factory()->for($user1->personalWorkspace)->create(['name' => 'work']);
 
     $this->actingAs($user2)
-        ->postJson(route('tags.store'), ['name' => 'work', 'color' => 'red'])
+        ->postJson(route('tags.store', $user2->personalWorkspace), ['name' => 'work', 'color' => 'red'])
         ->assertCreated();
 });
 
@@ -141,11 +143,13 @@ test('cannot sync tags on another user task', function () {
 
 test('can create task with tags', function () {
     $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
     $tags = Tag::factory()->for($user->personalWorkspace)->count(2)->create();
 
     $this->actingAs($user)
-        ->post(route('tasks.store'), [
+        ->post(route('tasks.store', $user->personalWorkspace), [
             'title' => 'Tagged task',
+            'board_id' => $board->id,
             'tag_ids' => $tags->pluck('id')->toArray(),
         ])
         ->assertRedirect();
@@ -156,12 +160,13 @@ test('can create task with tags', function () {
 
 test('tasks index includes tags via eager loading', function () {
     $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
     $tag = Tag::factory()->for($user->personalWorkspace)->create();
-    $task = Task::factory()->for($user)->create();
+    $task = Task::factory()->for($user)->for($board)->create();
     $task->tags()->attach($tag);
 
     $response = $this->actingAs($user)
-        ->get(route('tasks.index'))
+        ->get(route('tasks.index', $user->personalWorkspace))
         ->assertOk();
 
     $props = $response->original->getData()['page']['props'];

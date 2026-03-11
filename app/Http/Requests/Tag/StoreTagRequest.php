@@ -12,7 +12,7 @@ class StoreTagRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->can('view', $this->route('workspace'));
     }
 
     /**
@@ -25,7 +25,7 @@ class StoreTagRequest extends FormRequest
                 'required',
                 'string',
                 'max:50',
-                Rule::unique('tags')->where('workspace_id', $this->user()->personalWorkspace?->id),
+                Rule::unique('tags')->where('workspace_id', $this->route('workspace')->id),
             ],
             'color' => ['required', new Enum(TagColor::class)],
         ];

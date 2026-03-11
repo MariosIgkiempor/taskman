@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Http\Requests\Task;
+namespace App\Http\Requests\Workspace;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class SyncTaskRemindersRequest extends FormRequest
+class UpdateMemberRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('update', $this->route('task'));
+        return $this->user()->can('manageMembers', $this->route('workspace'));
     }
 
     /**
@@ -19,8 +19,7 @@ class SyncTaskRemindersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'reminders' => ['present', 'array'],
-            'reminders.*' => ['integer', 'distinct', Rule::in([1, 5, 15, 30, 60])],
+            'role' => ['required', 'string', Rule::in(['admin', 'member'])],
         ];
     }
 }

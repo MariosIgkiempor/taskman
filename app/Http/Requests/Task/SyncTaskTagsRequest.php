@@ -10,7 +10,7 @@ class SyncTaskTagsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->id() === $this->route('task')->user_id;
+        return $this->user()->can('update', $this->route('task'));
     }
 
     /**

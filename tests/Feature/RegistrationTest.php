@@ -39,5 +39,7 @@ it('allows a newly registered user to access the tasks page', function () {
         'password_confirmation' => 'password123',
     ]);
 
-    $this->get('/tasks')->assertOk();
+    $user = User::where('email', 'jane@example.com')->first();
+
+    $this->get(route('tasks.index', $user->personalWorkspace))->assertOk();
 });
