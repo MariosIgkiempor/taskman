@@ -2,14 +2,14 @@
 
 namespace Database\Factories;
 
-use App\Enums\TagColor;
+use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Tag>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\WorkspaceInvite>
  */
-class TagFactory extends Factory
+class WorkspaceInviteFactory extends Factory
 {
     /**
      * @return array<string, mixed>
@@ -18,8 +18,8 @@ class TagFactory extends Factory
     {
         return [
             'workspace_id' => Workspace::factory(),
-            'name' => fake()->unique()->word(),
-            'color' => fake()->randomElement(TagColor::cases()),
+            'created_by' => User::factory(),
+            'expires_at' => null,
         ];
     }
 }

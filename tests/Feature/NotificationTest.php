@@ -54,7 +54,7 @@ test('guests cannot access notifications', function () {
 });
 
 test('unread notifications count is shared in inertia props', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
     $task = Task::factory()->for($user)->scheduled()->create();
 
     $user->notify(new TaskReminderNotification($task, 5));

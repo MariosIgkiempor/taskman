@@ -28,7 +28,7 @@ class TaskController extends Controller
             'scheduledTasks' => $user->tasks()->with(['tags', 'reminders'])->scheduled()->forWeek($weekStart)->orderBy('scheduled_at')->get(),
             'completedTasks' => $user->tasks()->with(['tags', 'reminders'])->where('is_completed', true)->latest()->get(),
             'currentWeekStart' => $weekStart->toDateString(),
-            'tags' => $user->tags()->orderBy('name')->get(),
+            'tags' => $user->personalWorkspace->tags()->orderBy('name')->get(),
         ]);
     }
 
@@ -38,6 +38,7 @@ class TaskController extends Controller
         $tagIds = $validated['tag_ids'] ?? [];
         unset($validated['tag_ids']);
 
+        $validated['board_id'] = $request->user()->personalWorkspace->boards()->first()->id;
         $task = $request->user()->tasks()->create($validated);
 
         if ($tagIds) {

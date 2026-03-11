@@ -9,7 +9,7 @@ test('guests are redirected from tasks page', function () {
 });
 
 test('authenticated users can view tasks page', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
 
     $this->actingAs($user)
         ->get(route('tasks.index'))
@@ -17,7 +17,7 @@ test('authenticated users can view tasks page', function () {
 });
 
 test('can create a task', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
 
     $response = $this->actingAs($user)
         ->post(route('tasks.store'), ['title' => 'My new task']);
@@ -184,7 +184,7 @@ test('duration must be at least 5 minutes', function () {
 });
 
 test('index with week param returns tasks for that specific week', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
 
     $targetWeekStart = now()->subWeeks(2)->startOfWeek();
 
@@ -215,8 +215,8 @@ test('index with invalid week param returns validation error', function () {
 });
 
 test('index returns scheduled tasks with their tags', function () {
-    $user = User::factory()->create();
-    $tag = Tag::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $tag = Tag::factory()->for($user->personalWorkspace)->create();
 
     $thisWeek = now()->startOfWeek()->addDay()->setHour(10);
     $task = Task::factory()->for($user)->create([
@@ -236,7 +236,7 @@ test('index returns scheduled tasks with their tags', function () {
 });
 
 test('can create a task with location', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
 
     $this->actingAs($user)
         ->post(route('tasks.store'), [
@@ -301,7 +301,7 @@ test('location coordinates must have valid lat and lng', function () {
 });
 
 test('index returns separated unscheduled and scheduled tasks', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
 
     Task::factory()->for($user)->count(2)->create();
 
@@ -322,7 +322,7 @@ test('index returns separated unscheduled and scheduled tasks', function () {
 });
 
 test('completed tasks appear in completedTasks regardless of schedule status', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
 
     // Incomplete unscheduled task
     Task::factory()->for($user)->create();
@@ -348,8 +348,8 @@ test('completed tasks appear in completedTasks regardless of schedule status', f
 });
 
 test('can duplicate a task with all properties and tags', function () {
-    $user = User::factory()->create();
-    $tag = Tag::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $tag = Tag::factory()->for($user->personalWorkspace)->create();
     $task = Task::factory()->for($user)->scheduled()->withLocation()->create([
         'description' => 'Important meeting',
     ]);

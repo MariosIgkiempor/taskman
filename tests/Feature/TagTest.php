@@ -3,7 +3,6 @@
 use App\Enums\TagColor;
 use App\Models\Tag;
 use App\Models\Task;
-use App\Models\User;
 
 test('guests cannot access tags', function () {
     $this->get(route('tags.index'))->assertRedirect(route('login'));
@@ -11,8 +10,8 @@ test('guests cannot access tags', function () {
 });
 
 test('can list tags', function () {
-    $user = User::factory()->create();
-    Tag::factory()->for($user)->count(3)->create();
+    $user = createUserWithWorkspace();
+    Tag::factory()->for($user->personalWorkspace)->count(3)->create();
 
     $response = $this->actingAs($user)
         ->getJson(route('tags.index'))
@@ -22,19 +21,20 @@ test('can list tags', function () {
 });
 
 test('can create a tag', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
 
     $this->actingAs($user)
         ->postJson(route('tags.store'), ['name' => 'work', 'color' => 'blue'])
         ->assertCreated();
 
-    expect($user->tags()->count())->toBe(1);
-    expect($user->tags()->first()->name)->toBe('work');
-    expect($user->tags()->first()->color)->toBe(TagColor::Blue);
+    $workspace = $user->personalWorkspace;
+    expect($workspace->tags()->count())->toBe(1);
+    expect($workspace->tags()->first()->name)->toBe('work');
+    expect($workspace->tags()->first()->color)->toBe(TagColor::Blue);
 });
 
 test('creating a tag requires name and color', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
 
     $this->actingAs($user)
         ->postJson(route('tags.store'), [])
@@ -42,9 +42,9 @@ test('creating a tag requires name and color', function () {
         ->assertJsonValidationErrors(['name', 'color']);
 });
 
-test('tag name must be unique per user', function () {
-    $user = User::factory()->create();
-    Tag::factory()->for($user)->create(['name' => 'work']);
+test('tag name must be unique per workspace', function () {
+    $user = createUserWithWorkspace();
+    Tag::factory()->for($user->personalWorkspace)->create(['name' => 'work']);
 
     $this->actingAs($user)
         ->postJson(route('tags.store'), ['name' => 'work', 'color' => 'red'])
@@ -52,10 +52,10 @@ test('tag name must be unique per user', function () {
         ->assertJsonValidationErrors('name');
 });
 
-test('different users can have same tag name', function () {
-    $user1 = User::factory()->create();
-    $user2 = User::factory()->create();
-    Tag::factory()->for($user1)->create(['name' => 'work']);
+test('different workspaces can have same tag name', function () {
+    $user1 = createUserWithWorkspace();
+    $user2 = createUserWithWorkspace();
+    Tag::factory()->for($user1->personalWorkspace)->create(['name' => 'work']);
 
     $this->actingAs($user2)
         ->postJson(route('tags.store'), ['name' => 'work', 'color' => 'red'])
@@ -63,8 +63,8 @@ test('different users can have same tag name', function () {
 });
 
 test('can delete a tag', function () {
-    $user = User::factory()->create();
-    $tag = Tag::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $tag = Tag::factory()->for($user->personalWorkspace)->create();
 
     $this->actingAs($user)
         ->deleteJson(route('tags.destroy', $tag))
@@ -74,9 +74,9 @@ test('can delete a tag', function () {
 });
 
 test('cannot delete another user tag', function () {
-    $user = User::factory()->create();
-    $otherUser = User::factory()->create();
-    $tag = Tag::factory()->for($otherUser)->create();
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+    $tag = Tag::factory()->for($otherUser->personalWorkspace)->create();
 
     $this->actingAs($user)
         ->deleteJson(route('tags.destroy', $tag))
@@ -84,8 +84,8 @@ test('cannot delete another user tag', function () {
 });
 
 test('can update a tag color', function () {
-    $user = User::factory()->create();
-    $tag = Tag::factory()->for($user)->create(['color' => TagColor::Blue]);
+    $user = createUserWithWorkspace();
+    $tag = Tag::factory()->for($user->personalWorkspace)->create(['color' => TagColor::Blue]);
 
     $this->actingAs($user)
         ->patchJson(route('tags.update', $tag), ['color' => 'red'])
@@ -95,9 +95,9 @@ test('can update a tag color', function () {
 });
 
 test('cannot update another user tag color', function () {
-    $user = User::factory()->create();
-    $otherUser = User::factory()->create();
-    $tag = Tag::factory()->for($otherUser)->create();
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+    $tag = Tag::factory()->for($otherUser->personalWorkspace)->create();
 
     $this->actingAs($user)
         ->patchJson(route('tags.update', $tag), ['color' => 'red'])
@@ -105,8 +105,8 @@ test('cannot update another user tag color', function () {
 });
 
 test('color must be a valid enum value', function () {
-    $user = User::factory()->create();
-    $tag = Tag::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $tag = Tag::factory()->for($user->personalWorkspace)->create();
 
     $this->actingAs($user)
         ->patchJson(route('tags.update', $tag), ['color' => 'invalid-color'])
@@ -115,9 +115,10 @@ test('color must be a valid enum value', function () {
 });
 
 test('can sync tags on a task', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->create();
-    $tags = Tag::factory()->for($user)->count(2)->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->create();
+    $tags = Tag::factory()->for($user->personalWorkspace)->count(2)->create();
 
     $this->actingAs($user)
         ->patchJson(route('tasks.tags.sync', $task), ['tag_ids' => $tags->pluck('id')->toArray()])
@@ -127,10 +128,11 @@ test('can sync tags on a task', function () {
 });
 
 test('cannot sync tags on another user task', function () {
-    $user = User::factory()->create();
-    $otherUser = User::factory()->create();
-    $task = Task::factory()->for($otherUser)->create();
-    $tag = Tag::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+    $otherBoard = $otherUser->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($otherUser)->for($otherBoard)->create();
+    $tag = Tag::factory()->for($user->personalWorkspace)->create();
 
     $this->actingAs($user)
         ->patchJson(route('tasks.tags.sync', $task), ['tag_ids' => [$tag->id]])
@@ -138,8 +140,8 @@ test('cannot sync tags on another user task', function () {
 });
 
 test('can create task with tags', function () {
-    $user = User::factory()->create();
-    $tags = Tag::factory()->for($user)->count(2)->create();
+    $user = createUserWithWorkspace();
+    $tags = Tag::factory()->for($user->personalWorkspace)->count(2)->create();
 
     $this->actingAs($user)
         ->post(route('tasks.store'), [
@@ -153,8 +155,8 @@ test('can create task with tags', function () {
 });
 
 test('tasks index includes tags via eager loading', function () {
-    $user = User::factory()->create();
-    $tag = Tag::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $tag = Tag::factory()->for($user->personalWorkspace)->create();
     $task = Task::factory()->for($user)->create();
     $task->tags()->attach($tag);
 

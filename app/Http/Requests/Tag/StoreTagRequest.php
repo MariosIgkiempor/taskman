@@ -25,7 +25,7 @@ class StoreTagRequest extends FormRequest
                 'required',
                 'string',
                 'max:50',
-                Rule::unique('tags')->where('user_id', $this->user()->id),
+                Rule::unique('tags')->where('workspace_id', $this->user()->personalWorkspace?->id),
             ],
             'color' => ['required', new Enum(TagColor::class)],
         ];

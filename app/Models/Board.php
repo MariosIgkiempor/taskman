@@ -2,15 +2,14 @@
 
 namespace App\Models;
 
-use App\Enums\TagColor;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Tag extends Model
+class Board extends Model
 {
-    /** @use HasFactory<\Database\Factories\TagFactory> */
+    /** @use HasFactory<\Database\Factories\BoardFactory> */
     use HasFactory;
 
     /**
@@ -20,17 +19,8 @@ class Tag extends Model
         'workspace_id',
         'name',
         'color',
+        'position',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'color' => TagColor::class,
-        ];
-    }
 
     /**
      * @return BelongsTo<Workspace, $this>
@@ -41,10 +31,10 @@ class Tag extends Model
     }
 
     /**
-     * @return BelongsToMany<Task, $this>
+     * @return HasMany<Task, $this>
      */
-    public function tasks(): BelongsToMany
+    public function tasks(): HasMany
     {
-        return $this->belongsToMany(Task::class);
+        return $this->hasMany(Task::class);
     }
 }

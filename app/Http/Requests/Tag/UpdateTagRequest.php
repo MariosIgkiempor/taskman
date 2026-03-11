@@ -11,7 +11,7 @@ class UpdateTagRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->route('tag')->user_id === $this->user()->id;
+        return $this->user()->can('update', $this->route('tag'));
     }
 
     /**

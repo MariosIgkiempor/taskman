@@ -2,15 +2,14 @@
 
 namespace App\Models;
 
-use App\Enums\TagColor;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Str;
 
-class Tag extends Model
+class WorkspaceInvite extends Model
 {
-    /** @use HasFactory<\Database\Factories\TagFactory> */
+    /** @use HasFactory<\Database\Factories\WorkspaceInviteFactory> */
     use HasFactory;
 
     /**
@@ -18,8 +17,8 @@ class Tag extends Model
      */
     protected $fillable = [
         'workspace_id',
-        'name',
-        'color',
+        'created_by',
+        'expires_at',
     ];
 
     /**
@@ -28,8 +27,17 @@ class Tag extends Model
     protected function casts(): array
     {
         return [
-            'color' => TagColor::class,
+            'expires_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (WorkspaceInvite $invite) {
+            if (empty($invite->token)) {
+                $invite->token = Str::random(64);
+            }
+        });
     }
 
     /**
@@ -41,10 +49,10 @@ class Tag extends Model
     }
 
     /**
-     * @return BelongsToMany<Task, $this>
+     * @return BelongsTo<User, $this>
      */
-    public function tasks(): BelongsToMany
+    public function creator(): BelongsTo
     {
-        return $this->belongsToMany(Task::class);
+        return $this->belongsTo(User::class, 'created_by');
     }
 }
