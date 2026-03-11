@@ -101,7 +101,6 @@ export function TaskEditPopover({
                         tags={tags}
                         onClose={onClose}
                         onTagCreated={onTagCreated}
-                        onTagUpdated={onTagUpdated}
                         onScheduledWithNotifiedReminders={onScheduledWithNotifiedReminders}
                     />
                 )}
@@ -115,7 +114,6 @@ interface TaskEditFormProps {
     tags: Tag[];
     onClose: () => void;
     onTagCreated: (tag: Tag) => void;
-    onTagUpdated: (tag: Tag) => void;
     onScheduledWithNotifiedReminders: (task: Task) => void;
 }
 
@@ -124,7 +122,6 @@ function TaskEditForm({
     tags,
     onClose,
     onTagCreated,
-    onTagUpdated,
     onScheduledWithNotifiedReminders,
 }: TaskEditFormProps) {
     const parseScheduledAt = (scheduledAt: string | null) => {
@@ -427,31 +424,6 @@ function TaskEditForm({
             })();
         },
         [onTagCreated],
-    );
-
-    const handleChangeTagColor = useCallback(
-        (tagId: number, color: string) => {
-            const previousTags = taskTagsRef.current;
-            const nextTags = previousTags.map((tag) =>
-                tag.id === tagId ? { ...tag, color } : tag,
-            );
-
-            taskTagsRef.current = nextTags;
-            setTaskTags(nextTags);
-
-            void requestJson<Tag>('patch', TagController.update.url(tagId), {
-                color,
-            })
-                .then((response) => {
-                    onTagUpdated(response);
-                    router.reload();
-                })
-                .catch(() => {
-                    taskTagsRef.current = previousTags;
-                    setTaskTags(previousTags);
-                });
-        },
-        [onTagUpdated],
     );
 
     const handleRemoveTag = useCallback((tagId: number) => {

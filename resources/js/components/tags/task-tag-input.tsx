@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { TagBadge } from '@/components/tags/tag-badge';
 import {
     Popover,
@@ -56,9 +56,18 @@ export function TaskTagInput({
     const totalItems = suggestions.length + (showCreate ? 1 : 0);
 
     // Reset highlight when suggestions change
-    useEffect(() => {
-        setHighlightIndex(0);
-    }, [suggestions.length, showCreate]);
+    const prevSuggestionsLen = useRef(suggestions.length);
+    const prevShowCreate = useRef(showCreate);
+    if (
+        suggestions.length !== prevSuggestionsLen.current ||
+        showCreate !== prevShowCreate.current
+    ) {
+        prevSuggestionsLen.current = suggestions.length;
+        prevShowCreate.current = showCreate;
+        if (highlightIndex !== 0) {
+            setHighlightIndex(0);
+        }
+    }
 
     const clearAndClose = useCallback(() => {
         setQuery('');
