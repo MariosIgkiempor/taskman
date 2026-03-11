@@ -44,7 +44,6 @@ interface TaskEditPopoverProps {
     tags: Tag[];
     onClose: () => void;
     onTagCreated: (tag: Tag) => void;
-    onTagUpdated: (tag: Tag) => void;
     onScheduledWithNotifiedReminders: (task: Task) => void;
 }
 
@@ -54,7 +53,6 @@ export function TaskEditPopover({
     tags,
     onClose,
     onTagCreated,
-    onTagUpdated,
     onScheduledWithNotifiedReminders,
 }: TaskEditPopoverProps) {
     const isOpen = task !== null && anchorPoint !== null;
