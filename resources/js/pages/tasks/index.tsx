@@ -111,12 +111,6 @@ export default function TasksIndex({
         });
     }, []);
 
-    const handleTagUpdated = useCallback((updatedTag: Tag) => {
-        setLocalTags((prev) =>
-            prev.map((tag) => (tag.id === updatedTag.id ? updatedTag : tag)),
-        );
-    }, []);
-
     const handleTaskClick = useCallback(
         (task: Task, event: React.MouseEvent) => {
             setEditingTask(task);
@@ -198,7 +192,6 @@ export default function TasksIndex({
                 tags={localTags}
                 onClose={handleCloseEdit}
                 onTagCreated={handleTagCreated}
-                onTagUpdated={handleTagUpdated}
                 onScheduledWithNotifiedReminders={handleScheduledWithNotifiedReminders}
             />
             <Dialog open={rearmTask !== null} onOpenChange={(open) => { if (!open) setRearmTask(null); }}>
