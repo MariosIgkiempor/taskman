@@ -18,7 +18,7 @@ export default function TwoFactorRecoveryCodes({
   errors,
 }: Props) {
   const [codesAreVisible, setCodesAreVisible] = useState<boolean>(false);
-  const codesSectionRef = useRef<HTMLDivElement | null>(null);
+  const codesSectionRef = useRef<HTMLUListElement | null>(null);
   const canRegenerateCodes = recoveryCodesList.length > 0 && codesAreVisible;
 
   const toggleCodesVisibility = useCallback(async () => {
@@ -99,30 +99,29 @@ export default function TwoFactorRecoveryCodes({
               <AlertError errors={errors} />
             ) : (
               <>
-                <div
+                <ul
                   ref={codesSectionRef}
-                  className="grid gap-1 rounded-lg bg-muted p-4 font-mono text-sm"
-                  role="list"
+                  className="grid list-none gap-1 rounded-lg bg-muted p-4 font-mono text-sm"
                   aria-label="Recovery codes"
                 >
                   {recoveryCodesList.length ? (
-                    recoveryCodesList.map((code, index) => (
-                      <div key={index} role="listitem" className="select-text">
+                    recoveryCodesList.map((code) => (
+                      <li key={code} className="select-text">
                         {code}
-                      </div>
+                      </li>
                     ))
                   ) : (
-                    <div className="space-y-2" aria-label="Loading recovery codes">
-                      {Array.from({ length: 8 }, (_, index) => (
+                    <li className="space-y-2" aria-label="Loading recovery codes">
+                      {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
                         <div
-                          key={index}
+                          key={n}
                           className="h-4 animate-pulse rounded bg-muted-foreground/20"
                           aria-hidden="true"
                         />
                       ))}
-                    </div>
+                    </li>
                   )}
-                </div>
+                </ul>
 
                 <div className="select-none text-muted-foreground text-xs">
                   <p id="regenerate-warning">

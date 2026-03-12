@@ -29,13 +29,22 @@ export function TaskCard({ task, dimmed, onTaskClick }: TaskCardProps) {
   };
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: Drag-and-drop card requires div for DnD library
     <div
       data-task-id={task.id}
       data-task-title={task.title}
+      role="button"
+      tabIndex={0}
       className={`group flex cursor-grab items-center gap-2.5 rounded-lg bg-card p-2.5 text-sm transition-all duration-100 hover:bg-accent active:cursor-grabbing ${
         task.is_completed ? "opacity-50" : dimmed ? "opacity-40" : ""
       }`}
       onClick={(e) => onTaskClick(task, e)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onTaskClick(task, e as unknown as React.MouseEvent);
+        }
+      }}
     >
       <GripVertical className="size-3.5 shrink-0 text-muted-foreground/30 transition-colors group-hover:text-muted-foreground/60" />
       <TaskCheckbox checked={task.is_completed} onCheckedChange={handleToggleComplete} />

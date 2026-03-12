@@ -76,8 +76,8 @@ export default function TwoFactorChallenge() {
                       pattern={REGEXP_ONLY_DIGITS}
                     >
                       <InputOTPGroup>
-                        {Array.from({ length: OTP_MAX_LENGTH }, (_, index) => (
-                          <InputOTPSlot key={index} index={index} />
+                        {[0, 1, 2, 3, 4, 5].map((n) => (
+                          <InputOTPSlot key={n} index={n} />
                         ))}
                       </InputOTPGroup>
                     </InputOTP>

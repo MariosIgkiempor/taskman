@@ -21,6 +21,7 @@ export default function AppearanceToggleTab({
     <div className={cn("inline-flex gap-1 rounded-lg bg-muted p-1", className)} {...props}>
       {tabs.map(({ value, icon: Icon, label }) => (
         <button
+          type="button"
           key={value}
           onClick={() => updateAppearance(value)}
           className={cn(

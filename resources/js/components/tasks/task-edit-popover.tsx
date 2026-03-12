@@ -34,6 +34,17 @@ const DURATION_OPTIONS = [
   { value: "480", label: "8h" },
 ] as const;
 
+const parseScheduledAt = (scheduledAt: string | null) => {
+  if (!scheduledAt) return { date: "", time: "" };
+  const d = new Date(scheduledAt);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return { date: `${year}-${month}-${day}`, time: `${hours}:${minutes}` };
+};
+
 interface TaskEditPopoverProps {
   task: Task | null;
   anchorPoint: { x: number; y: number } | null;
@@ -123,17 +134,6 @@ function TaskEditForm({
   onTagCreated,
   onScheduledWithNotifiedReminders,
 }: TaskEditFormProps) {
-  const parseScheduledAt = (scheduledAt: string | null) => {
-    if (!scheduledAt) return { date: "", time: "" };
-    const d = new Date(scheduledAt);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    const hours = String(d.getHours()).padStart(2, "0");
-    const minutes = String(d.getMinutes()).padStart(2, "0");
-    return { date: `${year}-${month}-${day}`, time: `${hours}:${minutes}` };
-  };
-
   const initialSchedule = parseScheduledAt(task.scheduled_at);
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
@@ -172,7 +172,7 @@ function TaskEditForm({
     setScheduleTime(parsed.time);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDurationMinutes(String(task.duration_minutes));
-  }, [task.scheduled_at, task.duration_minutes, parseScheduledAt]);
+  }, [task.scheduled_at, task.duration_minutes]);
 
   const pickerTags = useMemo(() => {
     const taskTagsById = new Map(taskTags.map((tag) => [tag.id, tag]));

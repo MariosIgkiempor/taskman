@@ -110,8 +110,8 @@ export function TagPicker({
       })}
 
       {searchQuery && !exactMatch && (
-        <div
-          role="button"
+        <button
+          type="button"
           tabIndex={0}
           onClick={handleCreate}
           onKeyDown={(e) => {
@@ -128,7 +128,7 @@ export function TagPicker({
           <span className="truncate">
             Create <span className="font-medium">&ldquo;{searchQuery}&rdquo;</span>
           </span>
-        </div>
+        </button>
       )}
     </div>
   );

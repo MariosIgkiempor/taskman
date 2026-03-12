@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { requestJson } from "@/lib/request-json";
 import { qrCode, recoveryCodes, secretKey } from "@/routes/two-factor";
 import type { TwoFactorSecretKey, TwoFactorSetupData } from "@/types";
 
@@ -18,18 +19,6 @@ export type UseTwoFactorAuthReturn = {
 
 export const OTP_MAX_LENGTH = 6;
 
-const fetchJson = async <T>(url: string): Promise<T> => {
-  const response = await fetch(url, {
-    headers: { Accept: "application/json" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch: ${response.status}`);
-  }
-
-  return response.json();
-};
-
 export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
   const [qrCodeSvg, setQrCodeSvg] = useState<string | null>(null);
   const [manualSetupKey, setManualSetupKey] = useState<string | null>(null);
@@ -43,7 +32,7 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
 
   const fetchQrCode = useCallback(async (): Promise<void> => {
     try {
-      const { svg } = await fetchJson<TwoFactorSetupData>(qrCode.url());
+      const { svg } = await requestJson<TwoFactorSetupData>("get", qrCode.url());
       setQrCodeSvg(svg);
     } catch {
       setErrors((prev) => [...prev, "Failed to fetch QR code"]);
@@ -53,7 +42,7 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
 
   const fetchSetupKey = useCallback(async (): Promise<void> => {
     try {
-      const { secretKey: key } = await fetchJson<TwoFactorSecretKey>(secretKey.url());
+      const { secretKey: key } = await requestJson<TwoFactorSecretKey>("get", secretKey.url());
       setManualSetupKey(key);
     } catch {
       setErrors((prev) => [...prev, "Failed to fetch a setup key"]);
@@ -74,7 +63,7 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
   const fetchRecoveryCodes = useCallback(async (): Promise<void> => {
     try {
       clearErrors();
-      const codes = await fetchJson<string[]>(recoveryCodes.url());
+      const codes = await requestJson<string[]>("get", recoveryCodes.url());
       setRecoveryCodesList(codes);
     } catch {
       setErrors((prev) => [...prev, "Failed to fetch recovery codes"]);

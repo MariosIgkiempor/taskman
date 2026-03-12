@@ -24,13 +24,13 @@ function GridScanIcon() {
     <div className="mb-3 rounded-full border border-border bg-card p-0.5 shadow-sm">
       <div className="relative overflow-hidden rounded-full border border-border bg-muted p-2.5">
         <div className="absolute inset-0 grid grid-cols-5 opacity-50">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div key={`col-${i + 1}`} className="border-border border-r last:border-r-0" />
+          {[1, 2, 3, 4, 5].map((n) => (
+            <div key={`col-${n}`} className="border-border border-r last:border-r-0" />
           ))}
         </div>
         <div className="absolute inset-0 grid grid-rows-5 opacity-50">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div key={`row-${i + 1}`} className="border-border border-b last:border-b-0" />
+          {[1, 2, 3, 4, 5].map((n) => (
+            <div key={`row-${n}`} className="border-border border-b last:border-b-0" />
           ))}
         </div>
         <ScanLine className="relative z-20 size-6 text-foreground" />
@@ -56,6 +56,21 @@ function TwoFactorSetupStep({
   const [copiedText, copy] = useClipboard();
   const IconComponent = copiedText === manualSetupKey ? Check : Copy;
 
+  const qrCodeElement = qrCodeSvg ? (
+    <div
+      className="aspect-square w-full rounded-lg bg-white p-2 [&_svg]:size-full"
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: QR code SVG from trusted server endpoint
+      dangerouslySetInnerHTML={{
+        __html: qrCodeSvg,
+      }}
+      style={{
+        filter: resolvedAppearance === "dark" ? "invert(1) brightness(1.5)" : undefined,
+      }}
+    />
+  ) : (
+    <Spinner />
+  );
+
   return (
     <>
       {errors?.length ? (
@@ -65,20 +80,7 @@ function TwoFactorSetupStep({
           <div className="mx-auto flex max-w-md overflow-hidden">
             <div className="mx-auto aspect-square w-64 rounded-lg border border-border">
               <div className="z-10 flex h-full w-full items-center justify-center p-5">
-                {qrCodeSvg ? (
-                  <div
-                    className="aspect-square w-full rounded-lg bg-white p-2 [&_svg]:size-full"
-                    dangerouslySetInnerHTML={{
-                      __html: qrCodeSvg,
-                    }}
-                    style={{
-                      filter:
-                        resolvedAppearance === "dark" ? "invert(1) brightness(1.5)" : undefined,
-                    }}
-                  />
-                ) : (
-                  <Spinner />
-                )}
+                {qrCodeElement}
               </div>
             </div>
           </div>
@@ -109,6 +111,7 @@ function TwoFactorSetupStep({
                     className="h-full w-full bg-background p-3 text-foreground outline-none"
                   />
                   <button
+                    type="button"
                     onClick={() => copy(manualSetupKey)}
                     className="border-border border-l px-3 hover:bg-muted"
                   >
@@ -161,8 +164,8 @@ function TwoFactorVerificationStep({
                 pattern={REGEXP_ONLY_DIGITS}
               >
                 <InputOTPGroup>
-                  {Array.from({ length: OTP_MAX_LENGTH }, (_, index) => (
-                    <InputOTPSlot key={index} index={index} />
+                  {[0, 1, 2, 3, 4, 5].map((n) => (
+                    <InputOTPSlot key={n} index={n} />
                   ))}
                 </InputOTPGroup>
               </InputOTP>

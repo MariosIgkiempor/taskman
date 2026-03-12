@@ -1,15 +1,9 @@
-import type {
-  EventApi,
-  EventClickArg,
-  EventContentArg,
-  EventDropArg,
-  EventResizeDoneArg,
-} from "@fullcalendar/core";
-import interactionPlugin, { Draggable } from "@fullcalendar/interaction";
+import type { EventApi, EventClickArg, EventContentArg, EventDropArg } from "@fullcalendar/core";
+import interactionPlugin, { Draggable, type EventResizeDoneArg } from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { router } from "@inertiajs/react";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import TaskController from "@/actions/App/Http/Controllers/TaskController";
 import { TaskCheckbox } from "@/components/ui/task-checkbox";
 import { tagColors } from "@/lib/tag-colors";
@@ -109,30 +103,30 @@ export function WeeklyCalendar({
     extendedProps: Record<string, unknown>;
   } | null>(null);
 
-  const addShadowEvent = (calendarApi: ReturnType<FullCalendar["getApi"]>) => {
+  const addShadowEvent = useCallback((calendarApi: ReturnType<FullCalendar["getApi"]>) => {
     if (calendarApi.getEventById(SHADOW_EVENT_ID)) {
       return;
     }
 
     const origEvent = draggedEventRef.current;
-    if (!origEvent) {
+    if (!origEvent?.start || !origEvent.end) {
       return;
     }
 
     calendarApi.addEvent({
       id: SHADOW_EVENT_ID,
       title: origEvent.title,
-      start: origEvent.start!,
-      end: origEvent.end!,
+      start: origEvent.start,
+      end: origEvent.end,
       classNames: ["fc-event-duplicating"],
       editable: false,
       extendedProps: origEvent.extendedProps,
     });
-  };
+  }, []);
 
-  const removeShadowEvent = (calendarApi: ReturnType<FullCalendar["getApi"]>) => {
+  const removeShadowEvent = useCallback((calendarApi: ReturnType<FullCalendar["getApi"]>) => {
     calendarApi.getEventById(SHADOW_EVENT_ID)?.remove();
-  };
+  }, []);
 
   // Track alt key state during drag via mousemove only.
   // keydown/keyup are unreliable on macOS during pointer-captured drags.
@@ -168,13 +162,13 @@ export function WeeklyCalendar({
   }, [addShadowEvent, removeShadowEvent]);
 
   const events = tasks
-    .filter((task) => task.scheduled_at)
+    .filter((task): task is Task & { scheduled_at: string } => task.scheduled_at !== null)
     .map((task) => ({
       id: `task-${task.id}`,
       title: task.title,
-      start: task.scheduled_at!,
+      start: task.scheduled_at,
       end: new Date(
-        new Date(task.scheduled_at!).getTime() + task.duration_minutes * 60 * 1000,
+        new Date(task.scheduled_at).getTime() + task.duration_minutes * 60 * 1000,
       ).toISOString(),
       extendedProps: {
         taskId: task.id,
@@ -240,10 +234,13 @@ export function WeeklyCalendar({
 
       // Brief blink on original after revert
       requestAnimationFrame(() => {
-        const liveEl = calendarApi?.getEventById(info.event.id)?.el;
-        if (liveEl) {
-          liveEl.classList.add("fc-event-duplicating");
-          setTimeout(() => liveEl.classList.remove("fc-event-duplicating"), 1500);
+        const eventEls = containerRef.current?.querySelectorAll<HTMLElement>(".fc-event");
+        for (const el of eventEls ?? []) {
+          if (el.querySelector(".fc-event-title")?.textContent === info.event.title) {
+            el.classList.add("fc-event-duplicating");
+            setTimeout(() => el.classList.remove("fc-event-duplicating"), 1500);
+            break;
+          }
         }
       });
 
