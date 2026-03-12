@@ -38,7 +38,7 @@ export function WeekNavigator({ weekStart }: WeekNavigatorProps) {
     const navigate = (direction: 'prev' | 'next') => {
         const target = new Date(start);
         target.setDate(target.getDate() + (direction === 'prev' ? -7 : 7));
-        const weekParam = target.toISOString().split('T')[0];
+        const weekParam = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`;
         router.get(
             tasksIndex(),
             { week: weekParam },

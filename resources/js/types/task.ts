@@ -11,6 +11,22 @@ export type TaskReminder = {
     notified_at: string | null;
 };
 
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+export type RecurrenceSeries = {
+    id: number;
+    frequency: RecurrenceFrequency;
+    interval: number;
+    days_of_week: number[] | null;
+    month_day: number | null;
+    month_week_ordinal: number | null;
+    month_week_day: number | null;
+    end_date: string | null;
+    end_count: number | null;
+};
+
+export type RecurrenceScope = 'single' | 'following' | 'all';
+
 export type Task = {
     id: number;
     title: string;
@@ -21,6 +37,10 @@ export type Task = {
     position: number;
     location: string | null;
     location_coordinates: { lat: number; lng: number } | null;
+    recurrence_series_id: number | null;
+    recurrence_index: number | null;
+    is_recurrence_exception: boolean;
+    recurrence_series: RecurrenceSeries | null;
     tags: Tag[];
     reminders: TaskReminder[];
 };

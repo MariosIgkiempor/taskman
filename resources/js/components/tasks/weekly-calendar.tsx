@@ -9,11 +9,13 @@ import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { router } from '@inertiajs/react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
+import { RecurrenceScopeDialog } from '@/components/tasks/recurrence-scope-dialog';
 import { TaskCheckbox } from '@/components/ui/task-checkbox';
 import { tagColors } from '@/lib/tag-colors';
-import type { Tag, Task } from '@/types';
+import type { RecurrenceScope, Tag, Task } from '@/types';
+import { Repeat } from 'lucide-react';
 
 const SHADOW_EVENT_ID = 'duplicate-shadow';
 
@@ -40,6 +42,11 @@ export function WeeklyCalendar({
     const tasksRef = useRef(tasks);
     const isDuplicatingRef = useRef(false);
     const isDraggingRef = useRef(false);
+    const [pendingCalendarEdit, setPendingCalendarEdit] = useState<{
+        taskId: number;
+        data: Record<string, unknown>;
+        revert: (() => void) | null;
+    } | null>(null);
 
     useEffect(() => {
         tasksRef.current = tasks;
@@ -169,6 +176,7 @@ export function WeeklyCalendar({
             extendedProps: {
                 taskId: task.id,
                 isCompleted: task.is_completed,
+                isRecurring: task.recurrence_series_id !== null,
                 tags: task.tags,
             },
             classNames: [
@@ -248,6 +256,16 @@ export function WeeklyCalendar({
             );
         } else {
             const task = tasksRef.current.find((t) => t.id === taskId);
+
+            if (task?.recurrence_series_id && !task.is_recurrence_exception) {
+                setPendingCalendarEdit({
+                    taskId,
+                    data: { scheduled_at: newStart.toISOString() },
+                    revert: () => info.revert(),
+                });
+                return;
+            }
+
             router.patch(
                 TaskController.schedule.url(taskId),
                 { scheduled_at: newStart.toISOString() },
@@ -287,6 +305,19 @@ export function WeeklyCalendar({
             const durationMinutes = Math.round(
                 (end.getTime() - start.getTime()) / 60000,
             );
+
+            if (task?.recurrence_series_id && !task.is_recurrence_exception) {
+                setPendingCalendarEdit({
+                    taskId,
+                    data: {
+                        scheduled_at: start.toISOString(),
+                        duration_minutes: durationMinutes,
+                    },
+                    revert: () => info.revert(),
+                });
+                return;
+            }
+
             router.patch(
                 TaskController.schedule.url(taskId),
                 {
@@ -369,11 +400,14 @@ export function WeeklyCalendar({
         const taskId = eventInfo.event.extendedProps.taskId as number;
         const isCompleted =
             eventInfo.event.extendedProps.isCompleted as boolean;
+        const isRecurring =
+            eventInfo.event.extendedProps.isRecurring as boolean;
 
         return (
             <div className="flex flex-col gap-0.5 overflow-hidden">
-                <div className="fc-event-time text-[0.6875rem] font-medium opacity-70">
+                <div className="fc-event-time flex items-center gap-1 text-[0.6875rem] font-medium opacity-70">
                     {eventInfo.timeText}
+                    {isRecurring && <Repeat className="size-2.5" />}
                 </div>
                 <div className="flex items-center gap-1.5">
                     <TaskCheckbox
@@ -405,7 +439,27 @@ export function WeeklyCalendar({
         );
     };
 
+    const handleCalendarScopeConfirm = (scope: RecurrenceScope) => {
+        if (!pendingCalendarEdit) return;
+        const task = tasksRef.current.find((t) => t.id === pendingCalendarEdit.taskId);
+        router.patch(
+            TaskController.schedule.url(pendingCalendarEdit.taskId),
+            { ...pendingCalendarEdit.data, recurrence_scope: scope },
+            { preserveScroll: true },
+        );
+        if (task?.reminders.some((r) => r.notified_at)) {
+            onScheduledWithNotifiedReminders(task);
+        }
+        setPendingCalendarEdit(null);
+    };
+
+    const handleCalendarScopeCancel = () => {
+        pendingCalendarEdit?.revert?.();
+        setPendingCalendarEdit(null);
+    };
+
     return (
+        <>
         <div
             ref={containerRef}
             className="h-full overflow-hidden rounded-lg bg-card [&_.fc]:h-full"
@@ -415,6 +469,7 @@ export function WeeklyCalendar({
                 plugins={[timeGridPlugin, interactionPlugin]}
                 initialView="timeGridWeek"
                 initialDate={weekStart}
+                firstDay={1}
                 headerToolbar={false}
                 slotMinTime="06:00:00"
                 slotMaxTime="22:00:00"
@@ -437,5 +492,12 @@ export function WeeklyCalendar({
                 nowIndicator={true}
             />
         </div>
+        <RecurrenceScopeDialog
+            open={pendingCalendarEdit !== null}
+            action="edit"
+            onConfirm={handleCalendarScopeConfirm}
+            onCancel={handleCalendarScopeCancel}
+        />
+        </>
     );
 }

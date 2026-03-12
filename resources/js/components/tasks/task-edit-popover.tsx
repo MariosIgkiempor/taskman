@@ -1,12 +1,16 @@
 import { router } from '@inertiajs/react';
-import { Bell, Calendar, Check, Circle, Clock, Globe, Tag as TagIcon, Trash2, X } from 'lucide-react';
+import { Bell, Calendar, Check, Circle, Clock, Globe, Repeat, Tag as TagIcon, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import TagController from '@/actions/App/Http/Controllers/TagController';
+import RecurrenceSeriesController from '@/actions/App/Http/Controllers/RecurrenceSeriesController';
 import TaskController from '@/actions/App/Http/Controllers/TaskController';
 import TaskTagController from '@/actions/App/Http/Controllers/TaskTagController';
 import { LocationInput } from '@/components/location-input';
 import { TagBadge } from '@/components/tags/tag-badge';
 import { TagPicker } from '@/components/tags/tag-picker';
+import { RecurrencePicker, recurrenceLabel } from '@/components/tasks/recurrence-picker';
+import type { RecurrencePickerHandle, RecurrenceRule } from '@/components/tasks/recurrence-picker';
+import { RecurrenceScopeDialog } from '@/components/tasks/recurrence-scope-dialog';
 import { ReminderPicker } from '@/components/tasks/reminder-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +27,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { requestJson } from '@/lib/request-json';
-import type { Tag, Task } from '@/types';
+import type { RecurrenceScope, Tag, Task } from '@/types';
 
 const DURATION_OPTIONS = [
     { value: '15', label: '15m' },
@@ -153,6 +157,13 @@ function TaskEditForm({
     );
     const [showTagPicker, setShowTagPicker] = useState(false);
     const [showReminderPicker, setShowReminderPicker] = useState(false);
+    const [showRecurrencePicker, setShowRecurrencePicker] = useState(false);
+    const [showRecurrenceDirtyPrompt, setShowRecurrenceDirtyPrompt] = useState(false);
+    const [showDeleteScopeDialog, setShowDeleteScopeDialog] = useState(false);
+    const [pendingEditChange, setPendingEditChange] = useState<{
+        type: 'schedule';
+        data: Record<string, unknown>;
+    } | null>(null);
     const [tagSearch, setTagSearch] = useState('');
     const [taskTags, setTaskTags] = useState<Tag[]>(task.tags);
     const pendingRef = useRef<{ title: string; description: string } | null>(
@@ -160,6 +171,7 @@ function TaskEditForm({
     );
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const titleRef = useRef<HTMLInputElement>(null);
+    const recurrencePickerRef = useRef<RecurrencePickerHandle>(null);
     const taskRef = useRef(task);
     const taskTagsRef = useRef<Tag[]>(task.tags);
 
@@ -217,6 +229,9 @@ function TaskEditForm({
                 data.description = pendingRef.current.description;
             }
             if (Object.keys(data).length > 0) {
+                if (currentTask.recurrence_series_id && !currentTask.is_recurrence_exception) {
+                    data.recurrence_scope = 'single';
+                }
                 router.patch(TaskController.update.url(currentTask.id), data, {
                     preserveScroll: true,
                 });
@@ -305,12 +320,19 @@ function TaskEditForm({
             if (!date) return;
             const timeValue = time || '09:00';
             const currentTask = taskRef.current;
+            const payload = {
+                scheduled_at: `${date}T${timeValue}:00`,
+                duration_minutes: parseInt(duration, 10),
+            };
+
+            if (currentTask.recurrence_series_id && !currentTask.is_recurrence_exception) {
+                setPendingEditChange({ type: 'schedule', data: payload });
+                return;
+            }
+
             router.patch(
                 TaskController.schedule.url(currentTask.id),
-                {
-                    scheduled_at: `${date}T${timeValue}:00`,
-                    duration_minutes: parseInt(duration, 10),
-                },
+                payload,
                 { preserveScroll: true },
             );
             if (currentTask.reminders.some((r) => r.notified_at)) {
@@ -350,15 +372,92 @@ function TaskEditForm({
     };
 
     const handleDelete = () => {
+        if (task.recurrence_series_id && !task.is_recurrence_exception) {
+            setShowDeleteScopeDialog(true);
+            return;
+        }
+        performDelete();
+    };
+
+    const performDelete = (scope?: RecurrenceScope) => {
         if (debounceRef.current) {
             clearTimeout(debounceRef.current);
             debounceRef.current = null;
         }
         pendingRef.current = null;
         router.delete(TaskController.destroy.url(task.id), {
+            data: scope ? { recurrence_scope: scope } : {},
             preserveScroll: true,
         });
+        setShowDeleteScopeDialog(false);
         onClose();
+    };
+
+    const handleEditScopeConfirm = (scope: RecurrenceScope) => {
+        if (!pendingEditChange) return;
+        const currentTask = taskRef.current;
+
+        router.patch(
+            TaskController.schedule.url(currentTask.id),
+            { ...pendingEditChange.data, recurrence_scope: scope },
+            { preserveScroll: true },
+        );
+
+        if (currentTask.reminders.some((r) => r.notified_at)) {
+            onScheduledWithNotifiedReminders(currentTask);
+        }
+
+        setPendingEditChange(null);
+    };
+
+    const handleRecurrenceSave = (rule: RecurrenceRule) => {
+        setShowRecurrencePicker(false);
+        if (!task.scheduled_at) return;
+
+        const parsed = parseScheduledAt(task.scheduled_at);
+        router.post(RecurrenceSeriesController.store.url(), {
+            existing_task_id: !task.recurrence_series_id ? task.id : undefined,
+            title: task.title,
+            description: task.description,
+            start_date: parsed.date,
+            time_of_day: parsed.time,
+            duration_minutes: task.duration_minutes,
+            location: task.location,
+            location_coordinates: task.location_coordinates,
+            tag_ids: task.tags.map((t) => t.id),
+            reminders: task.reminders.map((r) => r.minutes_before),
+            ...rule,
+        }, { preserveScroll: true });
+    };
+
+    const handleRecurrenceRemove = () => {
+        setShowRecurrencePicker(false);
+        if (task.recurrence_series_id) {
+            router.delete(TaskController.destroy.url(task.id), {
+                data: { recurrence_scope: 'all' },
+                preserveScroll: true,
+            });
+            onClose();
+        }
+    };
+
+    const handleToggleRecurrencePicker = () => {
+        if (showRecurrencePicker && recurrencePickerRef.current?.isDirty()) {
+            setShowRecurrenceDirtyPrompt(true);
+            return;
+        }
+        setShowRecurrenceDirtyPrompt(false);
+        setShowRecurrencePicker(!showRecurrencePicker);
+    };
+
+    const handleRecurrenceDirtySave = () => {
+        recurrencePickerRef.current?.save();
+        setShowRecurrenceDirtyPrompt(false);
+    };
+
+    const handleRecurrenceDirtyDiscard = () => {
+        setShowRecurrenceDirtyPrompt(false);
+        setShowRecurrencePicker(false);
     };
 
     const handleToggleTag = useCallback(
@@ -628,6 +727,17 @@ function TaskEditForm({
                     <Bell className="size-3" />
                     Remind
                 </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-7 gap-1.5 px-2 text-xs ${task.recurrence_series ? 'text-primary' : 'text-muted-foreground'}`}
+                    onClick={handleToggleRecurrencePicker}
+                    disabled={!task.scheduled_at}
+                    title={!task.scheduled_at ? 'Schedule the task first' : task.recurrence_series ? recurrenceLabel(task.recurrence_series) : undefined}
+                >
+                    <Repeat className="size-3" />
+                    {task.recurrence_series ? recurrenceLabel(task.recurrence_series) : 'Repeat'}
+                </Button>
                 {locationCoordinates && task.scheduled_at && (
                     <Button
                         variant="ghost"
@@ -675,6 +785,58 @@ function TaskEditForm({
                     />
                 </div>
             )}
+
+            {/* Inline recurrence picker */}
+            {showRecurrencePicker && task.scheduled_at && (
+                <div className="border-t border-border/50">
+                    {showRecurrenceDirtyPrompt && (
+                        <div className="flex items-center justify-between gap-2 bg-muted/50 px-3 py-1.5">
+                            <span className="text-xs text-muted-foreground">Unsaved changes</span>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs text-muted-foreground"
+                                    onClick={handleRecurrenceDirtyDiscard}
+                                >
+                                    Discard
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={handleRecurrenceDirtySave}
+                                >
+                                    Save
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                    <RecurrencePicker
+                        ref={recurrencePickerRef}
+                        key={task.recurrence_series?.id ?? 'new'}
+                        initialRule={task.recurrence_series}
+                        scheduledDate={scheduleDate}
+                        onSave={handleRecurrenceSave}
+                        onRemove={handleRecurrenceRemove}
+                    />
+                </div>
+            )}
+
+            {/* Edit scope dialog for recurring tasks */}
+            <RecurrenceScopeDialog
+                open={pendingEditChange !== null}
+                action="edit"
+                onConfirm={handleEditScopeConfirm}
+                onCancel={() => setPendingEditChange(null)}
+            />
+
+            {/* Delete scope dialog for recurring tasks */}
+            <RecurrenceScopeDialog
+                open={showDeleteScopeDialog}
+                action="delete"
+                onConfirm={(scope) => performDelete(scope)}
+                onCancel={() => setShowDeleteScopeDialog(false)}
+            />
         </div>
     );
 }

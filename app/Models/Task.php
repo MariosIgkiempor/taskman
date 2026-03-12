@@ -27,6 +27,9 @@ class Task extends Model
         'position',
         'location',
         'location_coordinates',
+        'recurrence_series_id',
+        'recurrence_index',
+        'is_recurrence_exception',
     ];
 
     /**
@@ -37,6 +40,7 @@ class Task extends Model
         return [
             'scheduled_at' => 'datetime',
             'is_completed' => 'boolean',
+            'is_recurrence_exception' => 'boolean',
             'location_coordinates' => 'array',
         ];
     }
@@ -63,6 +67,24 @@ class Task extends Model
     public function reminders(): HasMany
     {
         return $this->hasMany(TaskReminder::class);
+    }
+
+    /**
+     * @return BelongsTo<RecurrenceSeries, $this>
+     */
+    public function recurrenceSeries(): BelongsTo
+    {
+        return $this->belongsTo(RecurrenceSeries::class);
+    }
+
+    public function isRecurring(): bool
+    {
+        return $this->recurrence_series_id !== null;
+    }
+
+    public function isRecurrenceException(): bool
+    {
+        return $this->is_recurrence_exception;
     }
 
     /**
