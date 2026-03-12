@@ -3,6 +3,7 @@
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\GeocodeController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\RecurrenceSeriesController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskReminderController;
@@ -54,6 +55,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('tasks/{task}/unschedule', [TaskController::class, 'unschedule'])->name('tasks.unschedule');
     Route::post('tasks/{task}/duplicate', [TaskController::class, 'duplicate'])->name('tasks.duplicate');
     Route::delete('tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
+
+    // Recurrence series
+    Route::post('recurrence-series', [RecurrenceSeriesController::class, 'store'])->name('recurrence-series.store');
+    Route::patch('recurrence-series/{recurrenceSeries}', [RecurrenceSeriesController::class, 'update'])->name('recurrence-series.update');
 
     // Tags (index/store scoped to workspace)
     Route::get('workspaces/{workspace}/tags', [TagController::class, 'index'])->name('tags.index');

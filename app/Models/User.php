@@ -62,6 +62,14 @@ class User extends Authenticatable
     }
 
     /**
+     * @return HasMany<RecurrenceSeries, $this>
+     */
+    public function recurrenceSeries(): HasMany
+    {
+        return $this->hasMany(RecurrenceSeries::class);
+    }
+
+    /**
      * @return BelongsToMany<Workspace, $this>
      */
     public function workspaces(): BelongsToMany

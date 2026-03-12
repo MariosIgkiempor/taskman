@@ -3,11 +3,13 @@ import interactionPlugin, { Draggable, type EventResizeDoneArg } from "@fullcale
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { router } from "@inertiajs/react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Repeat } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TaskController from "@/actions/App/Http/Controllers/TaskController";
+import { RecurrenceScopeDialog } from "@/components/tasks/recurrence-scope-dialog";
 import { TaskCheckbox } from "@/components/ui/task-checkbox";
 import { tagColors } from "@/lib/tag-colors";
-import type { Board, Tag, Task } from "@/types";
+import type { Board, RecurrenceScope, Tag, Task } from "@/types";
 
 const SHADOW_EVENT_ID = "duplicate-shadow";
 
@@ -45,6 +47,11 @@ export function WeeklyCalendar({
   const tasksRef = useRef(tasks);
   const isDuplicatingRef = useRef(false);
   const isDraggingRef = useRef(false);
+  const [pendingCalendarEdit, setPendingCalendarEdit] = useState<{
+    taskId: number;
+    data: Record<string, unknown>;
+    revert: (() => void) | null;
+  } | null>(null);
 
   useEffect(() => {
     tasksRef.current = tasks;
@@ -174,6 +181,7 @@ export function WeeklyCalendar({
         taskId: task.id,
         boardId: task.board_id,
         isCompleted: task.is_completed,
+        isRecurring: task.recurrence_series_id !== null,
         tags: task.tags,
       },
       classNames: [
@@ -251,6 +259,16 @@ export function WeeklyCalendar({
       );
     } else {
       const task = tasksRef.current.find((t) => t.id === taskId);
+
+      if (task?.recurrence_series_id && !task.is_recurrence_exception) {
+        setPendingCalendarEdit({
+          taskId,
+          data: { scheduled_at: newStart.toISOString() },
+          revert: () => info.revert(),
+        });
+        return;
+      }
+
       router.patch(
         TaskController.schedule.url(taskId),
         { scheduled_at: newStart.toISOString() },
@@ -288,6 +306,19 @@ export function WeeklyCalendar({
     if (taskId && start && end) {
       const task = tasksRef.current.find((t) => t.id === taskId);
       const durationMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
+
+      if (task?.recurrence_series_id && !task.is_recurrence_exception) {
+        setPendingCalendarEdit({
+          taskId,
+          data: {
+            scheduled_at: start.toISOString(),
+            duration_minutes: durationMinutes,
+          },
+          revert: () => info.revert(),
+        });
+        return;
+      }
+
       router.patch(
         TaskController.schedule.url(taskId),
         {
@@ -366,6 +397,7 @@ export function WeeklyCalendar({
     const taskId = eventInfo.event.extendedProps.taskId as number;
     const boardId = eventInfo.event.extendedProps.boardId as number;
     const isCompleted = eventInfo.event.extendedProps.isCompleted as boolean;
+    const isRecurring = eventInfo.event.extendedProps.isRecurring as boolean;
     const boardColor = boardColorMap.get(boardId);
 
     return (
@@ -373,8 +405,9 @@ export function WeeklyCalendar({
         className="flex flex-col gap-0.5 overflow-hidden"
         style={boardColor ? { borderLeft: `3px solid ${boardColor}`, paddingLeft: 4 } : undefined}
       >
-        <div className="fc-event-time font-medium text-[0.6875rem] opacity-70">
+        <div className="fc-event-time flex items-center gap-1 font-medium text-[0.6875rem] opacity-70">
           {eventInfo.timeText}
+          {isRecurring && <Repeat className="size-2.5" />}
         </div>
         <div className="flex items-center gap-1.5">
           <TaskCheckbox
@@ -396,34 +429,62 @@ export function WeeklyCalendar({
     );
   };
 
+  const handleCalendarScopeConfirm = (scope: RecurrenceScope) => {
+    if (!pendingCalendarEdit) return;
+    const task = tasksRef.current.find((t) => t.id === pendingCalendarEdit.taskId);
+    router.patch(
+      TaskController.schedule.url(pendingCalendarEdit.taskId),
+      { ...pendingCalendarEdit.data, recurrence_scope: scope },
+      { preserveScroll: true },
+    );
+    if (task?.reminders.some((r) => r.notified_at)) {
+      onScheduledWithNotifiedReminders(task);
+    }
+    setPendingCalendarEdit(null);
+  };
+
+  const handleCalendarScopeCancel = () => {
+    pendingCalendarEdit?.revert?.();
+    setPendingCalendarEdit(null);
+  };
+
   return (
-    <div ref={containerRef} className="h-full overflow-hidden rounded-lg bg-card [&_.fc]:h-full">
-      <FullCalendar
-        ref={calendarRef}
-        plugins={[timeGridPlugin, interactionPlugin]}
-        initialView="timeGridWeek"
-        initialDate={weekStart}
-        headerToolbar={false}
-        slotMinTime="06:00:00"
-        slotMaxTime="22:00:00"
-        allDaySlot={false}
-        events={events}
-        editable={true}
-        droppable={true}
-        eventDragStart={handleEventDragStart}
-        eventDrop={handleEventDrop}
-        eventReceive={handleEventReceive}
-        eventResize={handleEventResize}
-        eventDragStop={handleEventDragStop}
-        eventClick={handleEventClick}
-        snapDuration="00:05:00"
-        height="100%"
-        dayHeaderFormat={{ weekday: "short", day: "numeric" }}
-        slotLabelFormat={{ hour: "numeric", meridiem: "short" }}
-        eventDurationEditable={true}
-        eventContent={renderEventContent}
-        nowIndicator={true}
+    <>
+      <div ref={containerRef} className="h-full overflow-hidden rounded-lg bg-card [&_.fc]:h-full">
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[timeGridPlugin, interactionPlugin]}
+          initialView="timeGridWeek"
+          initialDate={weekStart}
+          firstDay={1}
+          headerToolbar={false}
+          slotMinTime="06:00:00"
+          slotMaxTime="22:00:00"
+          allDaySlot={false}
+          events={events}
+          editable={true}
+          droppable={true}
+          eventDragStart={handleEventDragStart}
+          eventDrop={handleEventDrop}
+          eventReceive={handleEventReceive}
+          eventResize={handleEventResize}
+          eventDragStop={handleEventDragStop}
+          eventClick={handleEventClick}
+          snapDuration="00:05:00"
+          height="100%"
+          dayHeaderFormat={{ weekday: "short", day: "numeric" }}
+          slotLabelFormat={{ hour: "numeric", meridiem: "short" }}
+          eventDurationEditable={true}
+          eventContent={renderEventContent}
+          nowIndicator={true}
+        />
+      </div>
+      <RecurrenceScopeDialog
+        open={pendingCalendarEdit !== null}
+        action="edit"
+        onConfirm={handleCalendarScopeConfirm}
+        onCancel={handleCalendarScopeCancel}
       />
-    </div>
+    </>
   );
 }

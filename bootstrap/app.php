@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('reminders:send')->everyMinute();
+        $schedule->command('recurrence:extend')->daily();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -9,6 +9,7 @@ use App\Http\Requests\Task\UpdateTaskRequest;
 use App\Models\Task;
 use App\Models\Workspace;
 use App\Notifications\TaskReminderNotification;
+use App\Services\RecurrenceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -26,12 +27,17 @@ class TaskController extends Controller
             $request->validate(['week' => 'sometimes|date'])['week'] ?? now()
         )->startOfWeek();
 
+        $weekEnd = $weekStart->copy()->endOfWeek();
+        if ($weekEnd->gt(now())) {
+            app(RecurrenceService::class)->extendSeriesForUser($request->user(), $weekEnd);
+        }
+
         return Inertia::render('tasks/index', [
             'workspace' => $workspace,
             'boards' => $workspace->boards()->orderBy('position')->get(),
-            'unscheduledTasks' => $workspace->tasks()->with(['tags', 'reminders'])->unscheduled()->where('is_completed', false)->orderBy('position')->orderBy('created_at', 'desc')->get(),
-            'scheduledTasks' => $workspace->tasks()->with(['tags', 'reminders'])->scheduled()->forWeek($weekStart)->orderBy('scheduled_at')->get(),
-            'completedTasks' => $workspace->tasks()->with(['tags', 'reminders'])->where('is_completed', true)->latest()->get(),
+            'unscheduledTasks' => $workspace->tasks()->with(['tags', 'reminders', 'recurrenceSeries'])->unscheduled()->where('is_completed', false)->orderBy('position')->orderBy('created_at', 'desc')->get(),
+            'scheduledTasks' => $workspace->tasks()->with(['tags', 'reminders', 'recurrenceSeries'])->scheduled()->forWeek($weekStart)->orderBy('scheduled_at')->get(),
+            'completedTasks' => $workspace->tasks()->with(['tags', 'reminders', 'recurrenceSeries'])->where('is_completed', true)->latest()->get(),
             'currentWeekStart' => $weekStart->toDateString(),
             'tags' => $workspace->tags()->orderBy('name')->get(),
         ]);
@@ -54,7 +60,22 @@ class TaskController extends Controller
 
     public function update(UpdateTaskRequest $request, Task $task): RedirectResponse
     {
-        $task->update($request->validated());
+        $validated = $request->validated();
+        $scope = $validated['recurrence_scope'] ?? null;
+        unset($validated['recurrence_scope']);
+
+        if ($task->isRecurring() && $scope) {
+            $service = app(RecurrenceService::class);
+            match ($scope) {
+                'single' => $service->editSingleInstance($task, $validated),
+                'following' => $service->editThisAndFollowing($task, $validated),
+                'all' => $service->editAllInstances($task->recurrenceSeries, $validated),
+            };
+
+            return back();
+        }
+
+        $task->update($validated);
 
         if ($task->is_completed) {
             $this->clearRemindersAndNotifications($task);
@@ -65,7 +86,33 @@ class TaskController extends Controller
 
     public function schedule(ScheduleTaskRequest $request, Task $task): RedirectResponse
     {
-        $task->update($request->validated());
+        $validated = $request->validated();
+        $scope = $validated['recurrence_scope'] ?? null;
+        unset($validated['recurrence_scope']);
+
+        if ($task->isRecurring() && $scope) {
+            $service = app(RecurrenceService::class);
+
+            if ($scope === 'all') {
+                $seriesChanges = [];
+                if (isset($validated['scheduled_at'])) {
+                    $seriesChanges['time_of_day'] = Carbon::parse($validated['scheduled_at'])->format('H:i');
+                }
+                if (isset($validated['duration_minutes'])) {
+                    $seriesChanges['duration_minutes'] = $validated['duration_minutes'];
+                }
+                $service->editAllInstances($task->recurrenceSeries, $seriesChanges);
+            } else {
+                match ($scope) {
+                    'single' => $service->editSingleInstance($task, $validated),
+                    'following' => $service->editThisAndFollowing($task, $validated),
+                };
+            }
+
+            return back();
+        }
+
+        $task->update($validated);
 
         return back();
     }
@@ -75,6 +122,9 @@ class TaskController extends Controller
         $newTask = $task->replicate();
         $newTask->scheduled_at = $request->validated('scheduled_at');
         $newTask->is_completed = false;
+        $newTask->recurrence_series_id = null;
+        $newTask->recurrence_index = null;
+        $newTask->is_recurrence_exception = false;
         $request->user()->tasks()->save($newTask);
 
         $newTask->tags()->sync($task->tags->pluck('id'));
@@ -86,15 +136,33 @@ class TaskController extends Controller
     {
         Gate::authorize('update', $task);
 
-        $task->update(['scheduled_at' => null]);
+        $task->update([
+            'scheduled_at' => null,
+            'recurrence_series_id' => null,
+            'recurrence_index' => null,
+            'is_recurrence_exception' => false,
+        ]);
         $this->clearRemindersAndNotifications($task);
 
         return back();
     }
 
-    public function destroy(Task $task): RedirectResponse
+    public function destroy(Request $request, Task $task): RedirectResponse
     {
         Gate::authorize('delete', $task);
+
+        $scope = $request->input('recurrence_scope');
+
+        if ($task->isRecurring() && $scope) {
+            $service = app(RecurrenceService::class);
+            match ($scope) {
+                'single' => $service->deleteSingleInstance($task),
+                'following' => $service->deleteThisAndFollowing($task),
+                'all' => $service->deleteAllInstances($task->recurrenceSeries),
+            };
+
+            return back();
+        }
 
         $this->clearNotifications($task);
         $task->delete();
