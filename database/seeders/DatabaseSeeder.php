@@ -3,9 +3,12 @@
 namespace Database\Seeders;
 
 use App\Enums\TagColor;
+use App\Enums\WorkspaceRole;
+use App\Models\Board;
 use App\Models\Tag;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -20,12 +23,16 @@ class DatabaseSeeder extends Seeder
             'email' => 'test@example.com',
         ]);
 
-        $work = Tag::create(['user_id' => $user->id, 'name' => 'Work', 'color' => TagColor::Blue]);
-        $personal = Tag::create(['user_id' => $user->id, 'name' => 'Personal', 'color' => TagColor::Green]);
-        $health = Tag::create(['user_id' => $user->id, 'name' => 'Health', 'color' => TagColor::Teal]);
-        $learning = Tag::create(['user_id' => $user->id, 'name' => 'Learning', 'color' => TagColor::Violet]);
-        $errands = Tag::create(['user_id' => $user->id, 'name' => 'Errands', 'color' => TagColor::Orange]);
-        $finance = Tag::create(['user_id' => $user->id, 'name' => 'Finance', 'color' => TagColor::Amber]);
+        $workspace = Workspace::factory()->personal()->create(['owner_id' => $user->id]);
+        $workspace->members()->attach($user, ['role' => WorkspaceRole::Owner->value]);
+        $board = Board::factory()->for($workspace)->create(['name' => 'My Tasks']);
+
+        $work = Tag::create(['workspace_id' => $workspace->id, 'name' => 'Work', 'color' => TagColor::Blue]);
+        $personal = Tag::create(['workspace_id' => $workspace->id, 'name' => 'Personal', 'color' => TagColor::Green]);
+        $health = Tag::create(['workspace_id' => $workspace->id, 'name' => 'Health', 'color' => TagColor::Teal]);
+        $learning = Tag::create(['workspace_id' => $workspace->id, 'name' => 'Learning', 'color' => TagColor::Violet]);
+        $errands = Tag::create(['workspace_id' => $workspace->id, 'name' => 'Errands', 'color' => TagColor::Orange]);
+        $finance = Tag::create(['workspace_id' => $workspace->id, 'name' => 'Finance', 'color' => TagColor::Amber]);
 
         $tags = compact('work', 'personal', 'health', 'learning', 'errands', 'finance');
 
@@ -114,7 +121,7 @@ class DatabaseSeeder extends Seeder
 
                 $taskTags = array_map(fn (string $key) => $tags[$key], $tagKeys);
 
-                $task = Task::factory()->for($user)->create([
+                $task = Task::factory()->for($board)->for($user)->create([
                     'title' => $title,
                     'duration_minutes' => $duration,
                     'scheduled_at' => $scheduledAt,
@@ -149,7 +156,7 @@ class DatabaseSeeder extends Seeder
             $isCompleted = fake()->boolean(20);
             $taskTags = array_map(fn (string $key) => $tags[$key], $tagKeys);
 
-            $task = Task::factory()->for($user)->create([
+            $task = Task::factory()->for($board)->for($user)->create([
                 'title' => $title,
                 'duration_minutes' => 0,
                 'scheduled_at' => null,

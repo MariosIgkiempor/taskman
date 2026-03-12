@@ -2,6 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Enums\WorkspaceRole;
+use App\Models\Board;
+use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -43,6 +47,18 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    /**
+     * Create a personal workspace with a default board for the user.
+     */
+    public function withPersonalWorkspace(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            $workspace = Workspace::factory()->personal()->create(['owner_id' => $user->id]);
+            $workspace->members()->attach($user, ['role' => WorkspaceRole::Owner->value]);
+            Board::factory()->for($workspace)->create(['name' => 'My Tasks']);
+        });
     }
 
     /**

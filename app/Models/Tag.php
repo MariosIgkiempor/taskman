@@ -17,7 +17,7 @@ class Tag extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'user_id',
+        'workspace_id',
         'name',
         'color',
     ];
@@ -33,11 +33,11 @@ class Tag extends Model
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Workspace, $this>
      */
-    public function user(): BelongsTo
+    public function workspace(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Workspace::class);
     }
 
     /**

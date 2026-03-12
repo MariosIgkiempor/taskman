@@ -1,71 +1,69 @@
-import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid, ListTodo } from 'lucide-react';
-import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
-import { NavMain } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
+import { usePage } from "@inertiajs/react";
+import { LayoutGrid, ListTodo, Settings, Users } from "lucide-react";
+import WorkspaceController from "@/actions/App/Http/Controllers/WorkspaceController";
+import { NavMain } from "@/components/nav-main";
+import { NavUser } from "@/components/nav-user";
 import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarHeader,
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-} from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
-import { index as tasksIndex } from '@/routes/tasks';
-import type { NavItem } from '@/types';
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Tasks',
-        href: tasksIndex(),
-        icon: ListTodo,
-    },
-];
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarSeparator,
+} from "@/components/ui/sidebar";
+import { WorkspaceSwitcher } from "@/components/workspace-switcher";
+import { dashboard } from "@/routes";
+import { index as tasksIndex } from "@/routes/tasks";
+import type { NavItem } from "@/types";
 
 export function AppSidebar() {
-    return (
-        <Sidebar collapsible="icon" variant="inset">
-            <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
-                                <AppLogo />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarHeader>
+  const { currentWorkspace } = usePage().props;
 
-            <SidebarContent>
-                <NavMain items={mainNavItems} />
-            </SidebarContent>
+  const mainNavItems: NavItem[] = [
+    {
+      title: "Dashboard",
+      href: dashboard(),
+      icon: LayoutGrid,
+    },
+    {
+      title: "Tasks",
+      href: currentWorkspace ? tasksIndex.url(currentWorkspace) : dashboard(),
+      icon: ListTodo,
+    },
+  ];
 
-            <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
-                <NavUser />
-            </SidebarFooter>
-        </Sidebar>
-    );
+  if (currentWorkspace && !currentWorkspace.is_personal) {
+    mainNavItems.push({
+      title: "Members",
+      href: WorkspaceController.members.url(currentWorkspace),
+      icon: Users,
+    });
+
+    const canManage =
+      currentWorkspace.pivot?.role === "owner" || currentWorkspace.pivot?.role === "admin";
+
+    if (canManage) {
+      mainNavItems.push({
+        title: "Settings",
+        href: WorkspaceController.settings.url(currentWorkspace),
+        icon: Settings,
+      });
+    }
+  }
+
+  return (
+    <Sidebar collapsible="icon" variant="inset">
+      <SidebarHeader>
+        <WorkspaceSwitcher />
+        <SidebarSeparator />
+      </SidebarHeader>
+
+      <SidebarContent>
+        <NavMain items={mainNavItems} />
+      </SidebarContent>
+
+      <SidebarFooter>
+        <NavUser />
+      </SidebarFooter>
+    </Sidebar>
+  );
 }

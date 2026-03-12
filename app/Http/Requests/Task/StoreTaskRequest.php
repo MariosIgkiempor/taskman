@@ -10,7 +10,7 @@ class StoreTaskRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->can('view', $this->route('workspace'));
     }
 
     /**
@@ -25,10 +25,15 @@ class StoreTaskRequest extends FormRequest
             'location_coordinates' => ['nullable', 'array'],
             'location_coordinates.lat' => ['required_with:location_coordinates', 'numeric', 'between:-90,90'],
             'location_coordinates.lng' => ['required_with:location_coordinates', 'numeric', 'between:-180,180'],
+            'board_id' => [
+                'required',
+                'integer',
+                Rule::exists('boards', 'id')->where('workspace_id', $this->route('workspace')->id),
+            ],
             'tag_ids' => ['sometimes', 'array'],
             'tag_ids.*' => [
                 'integer',
-                Rule::exists('tags', 'id')->where('user_id', $this->user()->id),
+                Rule::exists('tags', 'id')->where('workspace_id', $this->route('workspace')->id),
             ],
         ];
     }

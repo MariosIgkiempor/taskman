@@ -10,7 +10,7 @@ class SyncTaskRemindersRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->id === $this->route('task')->user_id;
+        return $this->user()->can('update', $this->route('task'));
     }
 
     /**

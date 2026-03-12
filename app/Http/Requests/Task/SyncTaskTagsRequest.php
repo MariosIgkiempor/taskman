@@ -10,7 +10,7 @@ class SyncTaskTagsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->id() === $this->route('task')->user_id;
+        return $this->user()->can('update', $this->route('task'));
     }
 
     /**
@@ -22,7 +22,7 @@ class SyncTaskTagsRequest extends FormRequest
             'tag_ids' => ['present', 'array'],
             'tag_ids.*' => [
                 'integer',
-                Rule::exists('tags', 'id')->where('user_id', $this->user()->id),
+                Rule::exists('tags', 'id')->where('workspace_id', $this->route('task')->board->workspace_id),
             ],
         ];
     }

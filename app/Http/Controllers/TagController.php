@@ -5,18 +5,22 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Tag\StoreTagRequest;
 use App\Http\Requests\Tag\UpdateTagRequest;
 use App\Models\Tag;
+use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Gate;
 
 class TagController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Workspace $workspace): JsonResponse
     {
-        return response()->json(auth()->user()->tags()->orderBy('name')->get());
+        Gate::authorize('view', $workspace);
+
+        return response()->json($workspace->tags()->orderBy('name')->get());
     }
 
-    public function store(StoreTagRequest $request): JsonResponse
+    public function store(StoreTagRequest $request, Workspace $workspace): JsonResponse
     {
-        $tag = $request->user()->tags()->create($request->validated());
+        $tag = $workspace->tags()->create($request->validated());
 
         return response()->json($tag, 201);
     }
@@ -30,9 +34,7 @@ class TagController extends Controller
 
     public function destroy(Tag $tag): JsonResponse
     {
-        if (auth()->id() !== $tag->user_id) {
-            abort(403);
-        }
+        Gate::authorize('delete', $tag);
 
         $tag->delete();
 

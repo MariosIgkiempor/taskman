@@ -2,12 +2,12 @@
 
 use App\Models\Task;
 use App\Models\TaskReminder;
-use App\Models\User;
 use App\Notifications\TaskReminderNotification;
 
 test('can sync reminders for a scheduled task', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $this->actingAs($user)
         ->putJson(route('tasks.reminders.sync', $task), ['reminders' => [1, 5, 15]])
@@ -18,8 +18,9 @@ test('can sync reminders for a scheduled task', function () {
 });
 
 test('syncing reminders replaces existing ones', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     TaskReminder::factory()->for($task)->create(['minutes_before' => 30]);
     TaskReminder::factory()->for($task)->create(['minutes_before' => 60]);
@@ -33,8 +34,9 @@ test('syncing reminders replaces existing ones', function () {
 });
 
 test('can clear all reminders', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     TaskReminder::factory()->for($task)->create(['minutes_before' => 15]);
 
@@ -46,8 +48,9 @@ test('can clear all reminders', function () {
 });
 
 test('rejects duplicate reminder intervals', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $this->actingAs($user)
         ->putJson(route('tasks.reminders.sync', $task), ['reminders' => [5, 5]])
@@ -55,8 +58,9 @@ test('rejects duplicate reminder intervals', function () {
 });
 
 test('rejects invalid reminder intervals', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $this->actingAs($user)
         ->putJson(route('tasks.reminders.sync', $task), ['reminders' => [10]])
@@ -64,9 +68,10 @@ test('rejects invalid reminder intervals', function () {
 });
 
 test('cannot sync reminders for another user task', function () {
-    $user = User::factory()->create();
-    $otherUser = User::factory()->create();
-    $task = Task::factory()->for($otherUser)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+    $otherBoard = $otherUser->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($otherUser)->for($otherBoard)->scheduled()->create();
 
     $this->actingAs($user)
         ->putJson(route('tasks.reminders.sync', $task), ['reminders' => [5]])
@@ -74,8 +79,9 @@ test('cannot sync reminders for another user task', function () {
 });
 
 test('reminders are deleted when task is unscheduled', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     TaskReminder::factory()->for($task)->create(['minutes_before' => 5]);
     TaskReminder::factory()->for($task)->create(['minutes_before' => 15]);
@@ -88,8 +94,9 @@ test('reminders are deleted when task is unscheduled', function () {
 });
 
 test('reminders are deleted when task is completed', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     TaskReminder::factory()->for($task)->create(['minutes_before' => 30]);
 
@@ -101,8 +108,9 @@ test('reminders are deleted when task is completed', function () {
 });
 
 test('notifications are cleared when task is unscheduled', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $user->notify(new TaskReminderNotification($task, 5));
 
@@ -116,8 +124,9 @@ test('notifications are cleared when task is unscheduled', function () {
 });
 
 test('notifications are cleared when task is completed', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $user->notify(new TaskReminderNotification($task, 5));
 
@@ -129,8 +138,9 @@ test('notifications are cleared when task is completed', function () {
 });
 
 test('notifications are cleared when task is deleted', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $user->notify(new TaskReminderNotification($task, 5));
 
@@ -142,8 +152,9 @@ test('notifications are cleared when task is deleted', function () {
 });
 
 test('rearming reminders resets notified_at', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $reminder = TaskReminder::factory()->for($task)->notified()->create(['minutes_before' => 5]);
 
@@ -155,9 +166,10 @@ test('rearming reminders resets notified_at', function () {
 });
 
 test('cannot rearm reminders for another user task', function () {
-    $user = User::factory()->create();
-    $otherUser = User::factory()->create();
-    $task = Task::factory()->for($otherUser)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+    $otherBoard = $otherUser->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($otherUser)->for($otherBoard)->scheduled()->create();
 
     TaskReminder::factory()->for($task)->notified()->create(['minutes_before' => 5]);
 
@@ -167,8 +179,9 @@ test('cannot rearm reminders for another user task', function () {
 });
 
 test('rescheduling does not automatically reset notified_at', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $reminder = TaskReminder::factory()->for($task)->notified()->create(['minutes_before' => 5]);
 
@@ -180,8 +193,9 @@ test('rescheduling does not automatically reset notified_at', function () {
 });
 
 test('reminders cascade when task is deleted', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     TaskReminder::factory()->for($task)->create(['minutes_before' => 15]);
 
