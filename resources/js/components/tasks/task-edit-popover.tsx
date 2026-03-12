@@ -1,6 +1,7 @@
 import { router } from "@inertiajs/react";
 import { Bell, Calendar, Check, Circle, Clock, Globe, Repeat, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import RecurrenceSeriesController from "@/actions/App/Http/Controllers/RecurrenceSeriesController";
 import TagController from "@/actions/App/Http/Controllers/TagController";
 import TaskController from "@/actions/App/Http/Controllers/TaskController";
@@ -13,7 +14,6 @@ import { RecurrenceScopeDialog } from "@/components/tasks/recurrence-scope-dialo
 import { ReminderPicker } from "@/components/tasks/reminder-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useMorphPopover } from "@/hooks/use-morph-popover";
 import { requestJson } from "@/lib/request-json";
 import type { RecurrenceScope, Tag, Task, Workspace } from "@/types";
 
@@ -51,7 +52,7 @@ const parseScheduledAt = (scheduledAt: string | null) => {
 
 interface TaskEditPopoverProps {
   task: Task | null;
-  anchorPoint: { x: number; y: number } | null;
+  sourceElement: HTMLElement | null;
   workspace: Workspace;
   tags: Tag[];
   onClose: () => void;
@@ -61,63 +62,42 @@ interface TaskEditPopoverProps {
 
 export function TaskEditPopover({
   task,
-  anchorPoint,
+  sourceElement,
   workspace,
   tags,
   onClose,
   onTagCreated,
   onScheduledWithNotifiedReminders,
 }: TaskEditPopoverProps) {
-  const isOpen = task !== null && anchorPoint !== null;
+  const isOpen = task !== null && sourceElement !== null;
 
-  const handleClose = useCallback(() => {
-    onClose();
-  }, [onClose]);
+  const { portalRef, contentRef, isVisible, initialStyle } = useMorphPopover({
+    isOpen,
+    sourceElement,
+    onClose,
+  });
 
-  return (
-    <Popover
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) handleClose();
-      }}
-      modal={false}
+  if (!isVisible || !task) return null;
+
+  return createPortal(
+    <div
+      ref={portalRef}
+      className="fixed z-50 rounded-md border bg-popover text-popover-foreground shadow-md"
+      style={initialStyle}
     >
-      <PopoverAnchor
-        style={
-          anchorPoint
-            ? {
-                position: "fixed",
-                left: anchorPoint.x,
-                top: anchorPoint.y,
-                width: 0,
-                height: 0,
-                pointerEvents: "none",
-              }
-            : undefined
-        }
-      />
-      <PopoverContent
-        side="right"
-        align="start"
-        sideOffset={12}
-        collisionPadding={16}
-        className="w-80 p-0"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        onCloseAutoFocus={(e) => e.preventDefault()}
-      >
-        {task && (
-          <TaskEditForm
-            key={task.id}
-            task={task}
-            workspace={workspace}
-            tags={tags}
-            onClose={onClose}
-            onTagCreated={onTagCreated}
-            onScheduledWithNotifiedReminders={onScheduledWithNotifiedReminders}
-          />
-        )}
-      </PopoverContent>
-    </Popover>
+      <div ref={contentRef} className="overflow-hidden">
+        <TaskEditForm
+          key={task.id}
+          task={task}
+          workspace={workspace}
+          tags={tags}
+          onClose={onClose}
+          onTagCreated={onTagCreated}
+          onScheduledWithNotifiedReminders={onScheduledWithNotifiedReminders}
+        />
+      </div>
+    </div>,
+    document.body,
   );
 }
 
