@@ -39,7 +39,7 @@ class UpdateRecurrenceSeriesRequest extends FormRequest
             'tag_ids' => ['sometimes', 'array'],
             'tag_ids.*' => [
                 'integer',
-                Rule::exists('tags', 'id')->where('user_id', $this->user()->id),
+                Rule::exists('tags', 'id')->where('workspace_id', $this->route('recurrenceSeries')->board->workspace_id),
             ],
         ];
     }

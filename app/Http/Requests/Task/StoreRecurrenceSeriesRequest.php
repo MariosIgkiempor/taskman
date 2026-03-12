@@ -25,6 +25,7 @@ class StoreRecurrenceSeriesRequest extends FormRequest
                 'integer',
                 Rule::exists('tasks', 'id')->where('user_id', $this->user()->id)->whereNull('recurrence_series_id'),
             ],
+            'board_id' => ['required', 'integer', Rule::exists('boards', 'id')],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'start_date' => ['required', 'date'],
@@ -46,7 +47,7 @@ class StoreRecurrenceSeriesRequest extends FormRequest
             'tag_ids' => ['sometimes', 'array'],
             'tag_ids.*' => [
                 'integer',
-                Rule::exists('tags', 'id')->where('user_id', $this->user()->id),
+                Rule::exists('tags', 'id')->where('workspace_id', \App\Models\Board::find($this->input('board_id'))?->workspace_id),
             ],
             'reminders' => ['sometimes', 'array'],
             'reminders.*' => ['integer', 'min:1'],

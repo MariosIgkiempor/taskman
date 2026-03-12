@@ -7,38 +7,43 @@ use App\Http\Requests\Task\ScheduleTaskRequest;
 use App\Http\Requests\Task\StoreTaskRequest;
 use App\Http\Requests\Task\UpdateTaskRequest;
 use App\Models\Task;
+use App\Models\Workspace;
 use App\Notifications\TaskReminderNotification;
 use App\Services\RecurrenceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class TaskController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, Workspace $workspace): Response
     {
-        $user = auth()->user();
+        Gate::authorize('view', $workspace);
+
         $weekStart = Carbon::parse(
             $request->validate(['week' => 'sometimes|date'])['week'] ?? now()
         )->startOfWeek();
 
         $weekEnd = $weekStart->copy()->endOfWeek();
         if ($weekEnd->gt(now())) {
-            app(RecurrenceService::class)->extendSeriesForUser($user, $weekEnd);
+            app(RecurrenceService::class)->extendSeriesForUser($request->user(), $weekEnd);
         }
 
         return Inertia::render('tasks/index', [
-            'unscheduledTasks' => $user->tasks()->with(['tags', 'reminders', 'recurrenceSeries'])->unscheduled()->where('is_completed', false)->orderBy('position')->orderBy('created_at', 'desc')->get(),
-            'scheduledTasks' => $user->tasks()->with(['tags', 'reminders', 'recurrenceSeries'])->scheduled()->forWeek($weekStart)->orderBy('scheduled_at')->get(),
-            'completedTasks' => $user->tasks()->with(['tags', 'reminders', 'recurrenceSeries'])->where('is_completed', true)->latest()->get(),
+            'workspace' => $workspace,
+            'boards' => $workspace->boards()->orderBy('position')->get(),
+            'unscheduledTasks' => $workspace->tasks()->with(['tags', 'reminders', 'recurrenceSeries'])->unscheduled()->where('is_completed', false)->orderBy('position')->orderBy('created_at', 'desc')->get(),
+            'scheduledTasks' => $workspace->tasks()->with(['tags', 'reminders', 'recurrenceSeries'])->scheduled()->forWeek($weekStart)->orderBy('scheduled_at')->get(),
+            'completedTasks' => $workspace->tasks()->with(['tags', 'reminders', 'recurrenceSeries'])->where('is_completed', true)->latest()->get(),
             'currentWeekStart' => $weekStart->toDateString(),
-            'tags' => $user->tags()->orderBy('name')->get(),
+            'tags' => $workspace->tags()->orderBy('name')->get(),
         ]);
     }
 
-    public function store(StoreTaskRequest $request): RedirectResponse
+    public function store(StoreTaskRequest $request, Workspace $workspace): RedirectResponse
     {
         $validated = $request->validated();
         $tagIds = $validated['tag_ids'] ?? [];
@@ -129,9 +134,7 @@ class TaskController extends Controller
 
     public function unschedule(Task $task): RedirectResponse
     {
-        if (auth()->id() !== $task->user_id) {
-            abort(403);
-        }
+        Gate::authorize('update', $task);
 
         $task->update([
             'scheduled_at' => null,
@@ -146,9 +149,7 @@ class TaskController extends Controller
 
     public function destroy(Request $request, Task $task): RedirectResponse
     {
-        if (auth()->id() !== $task->user_id) {
-            abort(403);
-        }
+        Gate::authorize('delete', $task);
 
         $scope = $request->input('recurrence_scope');
 

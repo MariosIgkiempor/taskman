@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Board;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -17,6 +18,7 @@ class RecurrenceSeriesFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
+            'board_id' => Board::factory(),
             'title' => fake()->sentence(3),
             'description' => null,
             'time_of_day' => '09:00',

@@ -1,12 +1,12 @@
 <?php
 
 use App\Models\Task;
-use App\Models\User;
 use App\Notifications\TaskReminderNotification;
 
 test('can fetch unread notifications', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $user->notify(new TaskReminderNotification($task, 5));
 
@@ -20,8 +20,9 @@ test('can fetch unread notifications', function () {
 });
 
 test('can mark a notification as read', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $user->notify(new TaskReminderNotification($task, 15));
     $notification = $user->unreadNotifications()->first();
@@ -34,8 +35,9 @@ test('can mark a notification as read', function () {
 });
 
 test('can mark all notifications as read', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $user->notify(new TaskReminderNotification($task, 5));
     $user->notify(new TaskReminderNotification($task, 15));
@@ -54,13 +56,14 @@ test('guests cannot access notifications', function () {
 });
 
 test('unread notifications count is shared in inertia props', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $user->notify(new TaskReminderNotification($task, 5));
 
     $response = $this->actingAs($user)
-        ->get(route('tasks.index'))
+        ->get(route('tasks.index', $user->personalWorkspace))
         ->assertOk();
 
     $props = $response->original->getData()['page']['props'];

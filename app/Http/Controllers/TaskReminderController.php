@@ -5,14 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Task\SyncTaskRemindersRequest;
 use App\Models\Task;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Gate;
 
 class TaskReminderController extends Controller
 {
     public function rearm(Task $task): JsonResponse
     {
-        if (auth()->id() !== $task->user_id) {
-            abort(403);
-        }
+        Gate::authorize('update', $task);
 
         $task->reminders()->whereNotNull('notified_at')->update(['notified_at' => null]);
 

@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\TagColor;
-use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,7 +17,7 @@ class TagFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
+            'workspace_id' => Workspace::factory(),
             'name' => fake()->unique()->word(),
             'color' => fake()->randomElement(TagColor::cases()),
         ];

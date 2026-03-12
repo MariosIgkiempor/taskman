@@ -2,25 +2,30 @@
 
 use App\Models\Tag;
 use App\Models\Task;
-use App\Models\User;
 
 test('guests are redirected from tasks page', function () {
-    $this->get(route('tasks.index'))->assertRedirect(route('login'));
+    $workspace = App\Models\Workspace::factory()->create();
+
+    $this->get(route('tasks.index', $workspace))->assertRedirect(route('login'));
 });
 
 test('authenticated users can view tasks page', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
 
     $this->actingAs($user)
-        ->get(route('tasks.index'))
+        ->get(route('tasks.index', $user->personalWorkspace))
         ->assertOk();
 });
 
 test('can create a task', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
 
     $response = $this->actingAs($user)
-        ->post(route('tasks.store'), ['title' => 'My new task']);
+        ->post(route('tasks.store', $user->personalWorkspace), [
+            'title' => 'My new task',
+            'board_id' => $board->id,
+        ]);
 
     $response->assertRedirect();
 
@@ -29,16 +34,21 @@ test('can create a task', function () {
 });
 
 test('creating a task requires a title', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
 
     $this->actingAs($user)
-        ->post(route('tasks.store'), ['title' => ''])
+        ->post(route('tasks.store', $user->personalWorkspace), [
+            'title' => '',
+            'board_id' => $board->id,
+        ])
         ->assertSessionHasErrors('title');
 });
 
 test('can update a task', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->create();
 
     $this->actingAs($user)
         ->patch(route('tasks.update', $task), ['title' => 'Updated title'])
@@ -48,8 +58,9 @@ test('can update a task', function () {
 });
 
 test('can schedule a task', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->create();
 
     $scheduledAt = now()->addDay()->setHour(10)->setMinute(0)->setSecond(0)->toISOString();
 
@@ -61,8 +72,9 @@ test('can schedule a task', function () {
 });
 
 test('can unschedule a task', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $this->actingAs($user)
         ->patch(route('tasks.unschedule', $task))
@@ -72,8 +84,9 @@ test('can unschedule a task', function () {
 });
 
 test('can toggle task completion', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->create();
 
     $this->actingAs($user)
         ->patch(route('tasks.update', $task), ['is_completed' => true])
@@ -89,8 +102,9 @@ test('can toggle task completion', function () {
 });
 
 test('can delete a task', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->create();
 
     $this->actingAs($user)
         ->delete(route('tasks.destroy', $task))
@@ -100,9 +114,10 @@ test('can delete a task', function () {
 });
 
 test('cannot modify another user task', function () {
-    $user = User::factory()->create();
-    $otherUser = User::factory()->create();
-    $task = Task::factory()->for($otherUser)->create();
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+    $otherBoard = $otherUser->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($otherUser)->for($otherBoard)->create();
 
     $this->actingAs($user)
         ->patch(route('tasks.update', $task), ['title' => 'Hacked'])
@@ -122,8 +137,9 @@ test('cannot modify another user task', function () {
 });
 
 test('can resize a task to change its duration', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $this->actingAs($user)
         ->patch(route('tasks.schedule', $task), [
@@ -136,8 +152,9 @@ test('can resize a task to change its duration', function () {
 });
 
 test('can schedule an unscheduled task with date time and duration', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->create();
 
     $scheduledAt = now()->addDay()->setHour(14)->setMinute(30)->setSecond(0);
 
@@ -154,8 +171,9 @@ test('can schedule an unscheduled task with date time and duration', function ()
 });
 
 test('can reschedule a task to a different date and time', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $newScheduledAt = now()->addDays(3)->setHour(16)->setMinute(0)->setSecond(0);
 
@@ -172,8 +190,9 @@ test('can reschedule a task to a different date and time', function () {
 });
 
 test('duration must be at least 5 minutes', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $this->actingAs($user)
         ->patch(route('tasks.schedule', $task), [
@@ -184,20 +203,21 @@ test('duration must be at least 5 minutes', function () {
 });
 
 test('index with week param returns tasks for that specific week', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
 
     $targetWeekStart = now()->subWeeks(2)->startOfWeek();
 
-    Task::factory()->for($user)->create([
+    Task::factory()->for($user)->for($board)->create([
         'scheduled_at' => $targetWeekStart->copy()->addDay()->setHour(10),
     ]);
 
-    Task::factory()->for($user)->create([
+    Task::factory()->for($user)->for($board)->create([
         'scheduled_at' => now()->startOfWeek()->addDay()->setHour(10),
     ]);
 
     $response = $this->actingAs($user)
-        ->get(route('tasks.index', ['week' => $targetWeekStart->toDateString()]))
+        ->get(route('tasks.index', ['workspace' => $user->personalWorkspace, 'week' => $targetWeekStart->toDateString()]))
         ->assertOk();
 
     $props = $response->original->getData()['page']['props'];
@@ -207,25 +227,26 @@ test('index with week param returns tasks for that specific week', function () {
 });
 
 test('index with invalid week param returns validation error', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
 
     $this->actingAs($user)
-        ->get(route('tasks.index', ['week' => 'not-a-date']))
+        ->get(route('tasks.index', ['workspace' => $user->personalWorkspace, 'week' => 'not-a-date']))
         ->assertRedirect();
 });
 
 test('index returns scheduled tasks with their tags', function () {
-    $user = User::factory()->create();
-    $tag = Tag::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $tag = Tag::factory()->for($user->personalWorkspace)->create();
 
     $thisWeek = now()->startOfWeek()->addDay()->setHour(10);
-    $task = Task::factory()->for($user)->create([
+    $task = Task::factory()->for($user)->for($board)->create([
         'scheduled_at' => $thisWeek,
     ]);
     $task->tags()->attach($tag);
 
     $response = $this->actingAs($user)
-        ->get(route('tasks.index'))
+        ->get(route('tasks.index', $user->personalWorkspace))
         ->assertOk();
 
     $props = $response->original->getData()['page']['props'];
@@ -236,11 +257,13 @@ test('index returns scheduled tasks with their tags', function () {
 });
 
 test('can create a task with location', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
 
     $this->actingAs($user)
-        ->post(route('tasks.store'), [
+        ->post(route('tasks.store', $user->personalWorkspace), [
             'title' => 'Meeting at office',
+            'board_id' => $board->id,
             'location' => '123 Main St, New York, NY',
             'location_coordinates' => ['lat' => 40.7128, 'lng' => -74.0060],
         ])
@@ -252,8 +275,9 @@ test('can create a task with location', function () {
 });
 
 test('can update a task with location', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->create();
 
     $this->actingAs($user)
         ->patch(route('tasks.update', $task), [
@@ -268,8 +292,9 @@ test('can update a task with location', function () {
 });
 
 test('can clear task location', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->withLocation()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->withLocation()->create();
 
     $this->actingAs($user)
         ->patch(route('tasks.update', $task), [
@@ -284,8 +309,9 @@ test('can clear task location', function () {
 });
 
 test('location coordinates must have valid lat and lng', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->create();
 
     $this->actingAs($user)
         ->patch(route('tasks.update', $task), [
@@ -301,17 +327,18 @@ test('location coordinates must have valid lat and lng', function () {
 });
 
 test('index returns separated unscheduled and scheduled tasks', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
 
-    Task::factory()->for($user)->count(2)->create();
+    Task::factory()->for($user)->for($board)->count(2)->create();
 
     $thisWeek = now()->startOfWeek()->addDay()->setHour(10);
-    Task::factory()->for($user)->count(3)->create([
+    Task::factory()->for($user)->for($board)->count(3)->create([
         'scheduled_at' => $thisWeek,
     ]);
 
     $response = $this->actingAs($user)
-        ->get(route('tasks.index'))
+        ->get(route('tasks.index', $user->personalWorkspace))
         ->assertOk();
 
     $props = $response->original->getData()['page']['props'];
@@ -322,23 +349,24 @@ test('index returns separated unscheduled and scheduled tasks', function () {
 });
 
 test('completed tasks appear in completedTasks regardless of schedule status', function () {
-    $user = User::factory()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
 
     // Incomplete unscheduled task
-    Task::factory()->for($user)->create();
+    Task::factory()->for($user)->for($board)->create();
 
     // Completed unscheduled task
-    Task::factory()->for($user)->create(['is_completed' => true]);
+    Task::factory()->for($user)->for($board)->create(['is_completed' => true]);
 
     // Completed scheduled task
     $thisWeek = now()->startOfWeek()->addDay()->setHour(10);
-    Task::factory()->for($user)->create([
+    Task::factory()->for($user)->for($board)->create([
         'scheduled_at' => $thisWeek,
         'is_completed' => true,
     ]);
 
     $response = $this->actingAs($user)
-        ->get(route('tasks.index'))
+        ->get(route('tasks.index', $user->personalWorkspace))
         ->assertOk();
 
     $props = $response->original->getData()['page']['props'];
@@ -348,9 +376,10 @@ test('completed tasks appear in completedTasks regardless of schedule status', f
 });
 
 test('can duplicate a task with all properties and tags', function () {
-    $user = User::factory()->create();
-    $tag = Tag::factory()->for($user)->create();
-    $task = Task::factory()->for($user)->scheduled()->withLocation()->create([
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $tag = Tag::factory()->for($user->personalWorkspace)->create();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->withLocation()->create([
         'description' => 'Important meeting',
     ]);
     $task->tags()->attach($tag);
@@ -374,8 +403,9 @@ test('can duplicate a task with all properties and tags', function () {
 });
 
 test('duplicated task starts as incomplete', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->completed()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->completed()->create();
 
     $this->actingAs($user)
         ->post(route('tasks.duplicate', $task), ['scheduled_at' => now()->addDay()->toISOString()])
@@ -386,9 +416,10 @@ test('duplicated task starts as incomplete', function () {
 });
 
 test('cannot duplicate another user task', function () {
-    $user = User::factory()->create();
-    $otherUser = User::factory()->create();
-    $task = Task::factory()->for($otherUser)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+    $otherBoard = $otherUser->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($otherUser)->for($otherBoard)->scheduled()->create();
 
     $this->actingAs($user)
         ->post(route('tasks.duplicate', $task), ['scheduled_at' => now()->toISOString()])
@@ -396,10 +427,48 @@ test('cannot duplicate another user task', function () {
 });
 
 test('duplicate requires scheduled_at', function () {
-    $user = User::factory()->create();
-    $task = Task::factory()->for($user)->scheduled()->create();
+    $user = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $task = Task::factory()->for($user)->for($board)->scheduled()->create();
 
     $this->actingAs($user)
         ->post(route('tasks.duplicate', $task), [])
         ->assertSessionHasErrors('scheduled_at');
+});
+
+test('cannot access tasks index of workspace user is not a member of', function () {
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+
+    $this->actingAs($user)
+        ->get(route('tasks.index', $otherUser->personalWorkspace))
+        ->assertForbidden();
+});
+
+test('task store rejects board_id from another workspace', function () {
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+    $otherBoard = $otherUser->personalWorkspace->boards()->first();
+
+    $this->actingAs($user)
+        ->post(route('tasks.store', $user->personalWorkspace), [
+            'title' => 'Cross-workspace task',
+            'board_id' => $otherBoard->id,
+        ])
+        ->assertSessionHasErrors('board_id');
+});
+
+test('task store rejects tag_ids from another workspace', function () {
+    $user = createUserWithWorkspace();
+    $otherUser = createUserWithWorkspace();
+    $board = $user->personalWorkspace->boards()->first();
+    $otherTag = Tag::factory()->for($otherUser->personalWorkspace)->create();
+
+    $this->actingAs($user)
+        ->post(route('tasks.store', $user->personalWorkspace), [
+            'title' => 'Cross-workspace tag task',
+            'board_id' => $board->id,
+            'tag_ids' => [$otherTag->id],
+        ])
+        ->assertSessionHasErrors('tag_ids.0');
 });

@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('recurrence_series', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('board_id')->constrained()->cascadeOnDelete();
 
             // Template fields (copied to each generated task)
             $table->string('title', 255);

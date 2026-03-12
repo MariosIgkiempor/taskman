@@ -17,6 +17,7 @@ class RecurrenceSeries extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'board_id',
         'title',
         'description',
         'time_of_day',
@@ -57,6 +58,14 @@ class RecurrenceSeries extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<Board, $this>
+     */
+    public function board(): BelongsTo
+    {
+        return $this->belongsTo(Board::class);
     }
 
     /**

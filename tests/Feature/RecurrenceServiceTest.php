@@ -1,15 +1,20 @@
 <?php
 
+use App\Models\Board;
 use App\Models\RecurrenceSeries;
 use App\Models\Tag;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\RecurrenceService;
 use Illuminate\Support\Carbon;
 
 beforeEach(function () {
     $this->service = new RecurrenceService;
     $this->user = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_id' => $this->user->id]);
+    $workspace->members()->attach($this->user, ['role' => 'owner']);
+    $this->board = Board::factory()->create(['workspace_id' => $workspace->id]);
     Carbon::setTestNow('2026-03-11 10:00:00');
 });
 
@@ -17,6 +22,7 @@ beforeEach(function () {
 
 test('creates a daily recurring series with instances', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Daily standup',
         'description' => null,
         'time_of_day' => '09:00',
@@ -37,6 +43,7 @@ test('creates a daily recurring series with instances', function () {
 
 test('creates a weekly recurring series on specific days', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'MWF workout',
         'description' => null,
         'time_of_day' => '07:00',
@@ -58,6 +65,7 @@ test('creates a weekly recurring series on specific days', function () {
 
 test('creates a monthly recurring series on a specific day', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Monthly review',
         'description' => null,
         'time_of_day' => '14:00',
@@ -75,6 +83,7 @@ test('creates a monthly recurring series on a specific day', function () {
 
 test('creates a monthly ordinal recurring series', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'First Monday meeting',
         'description' => null,
         'time_of_day' => '10:00',
@@ -97,6 +106,7 @@ test('creates a monthly ordinal recurring series', function () {
 
 test('creates a yearly recurring series', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Anniversary',
         'description' => null,
         'time_of_day' => '12:00',
@@ -112,6 +122,7 @@ test('creates a yearly recurring series', function () {
 
 test('respects end_count when creating series', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Limited series',
         'description' => null,
         'time_of_day' => '09:00',
@@ -127,6 +138,7 @@ test('respects end_count when creating series', function () {
 
 test('respects end_date when creating series', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Ends in 2 weeks',
         'description' => null,
         'time_of_day' => '09:00',
@@ -143,9 +155,10 @@ test('respects end_date when creating series', function () {
 });
 
 test('copies tags to generated instances', function () {
-    $tag = Tag::factory()->create(['user_id' => $this->user->id]);
+    $tag = Tag::factory()->create(['workspace_id' => $this->board->workspace_id]);
 
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Tagged task',
         'description' => null,
         'time_of_day' => '09:00',
@@ -163,6 +176,7 @@ test('copies tags to generated instances', function () {
 
 test('copies reminders to generated instances', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'With reminders',
         'description' => null,
         'time_of_day' => '09:00',
@@ -182,6 +196,7 @@ test('copies reminders to generated instances', function () {
 
 test('edit single instance marks as exception', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Original',
         'description' => null,
         'time_of_day' => '09:00',
@@ -205,6 +220,7 @@ test('edit single instance marks as exception', function () {
 
 test('edit this and following splits series', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Original',
         'description' => null,
         'time_of_day' => '09:00',
@@ -234,6 +250,7 @@ test('edit all instances updates template and future tasks', function () {
     Carbon::setTestNow('2026-03-11 06:00:00');
 
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Original',
         'description' => null,
         'time_of_day' => '09:00',
@@ -256,6 +273,7 @@ test('edit all instances updates template and future tasks', function () {
 
 test('delete single instance removes only that task', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Test',
         'description' => null,
         'time_of_day' => '09:00',
@@ -274,6 +292,7 @@ test('delete single instance removes only that task', function () {
 
 test('delete this and following removes future instances', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Test',
         'description' => null,
         'time_of_day' => '09:00',
@@ -294,6 +313,7 @@ test('delete this and following removes future instances', function () {
 
 test('delete all instances removes series and all tasks', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Test',
         'description' => null,
         'time_of_day' => '09:00',
@@ -315,6 +335,7 @@ test('delete all instances removes series and all tasks', function () {
 
 test('extendSeriesForUser generates instances on demand when navigating past horizon', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Never-ending daily',
         'description' => null,
         'time_of_day' => '09:00',
@@ -347,6 +368,7 @@ test('extendSeriesForUser generates instances on demand when navigating past hor
 
 test('extendSeriesForUser does not generate for series with end_date in the past', function () {
     $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Already ended',
         'description' => null,
         'time_of_day' => '09:00',
@@ -365,6 +387,7 @@ test('extendSeriesForUser does not generate for series with end_date in the past
 
 test('extend all series generates new instances', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Test',
         'description' => null,
         'time_of_day' => '09:00',
@@ -388,6 +411,7 @@ test('extend all series generates new instances', function () {
 
 test('every 2 weeks generates correct dates', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Biweekly',
         'description' => null,
         'time_of_day' => '09:00',
@@ -411,6 +435,7 @@ test('every 2 weeks generates correct dates', function () {
 
 test('every 3 days generates correct dates', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Every 3 days',
         'description' => null,
         'time_of_day' => '09:00',
@@ -434,6 +459,7 @@ test('every 3 days generates correct dates', function () {
 test('can create a recurrence series via controller', function () {
     $this->actingAs($this->user)
         ->post(route('recurrence-series.store'), [
+            'board_id' => $this->board->id,
             'title' => 'Controller test',
             'start_date' => '2026-03-11',
             'time_of_day' => '09:00',
@@ -450,6 +476,7 @@ test('can create a recurrence series via controller', function () {
 
 test('can delete a recurring task with scope single', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Test',
         'description' => null,
         'time_of_day' => '09:00',
@@ -471,6 +498,7 @@ test('can delete a recurring task with scope single', function () {
 
 test('can delete a recurring task with scope all', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Test',
         'description' => null,
         'time_of_day' => '09:00',
@@ -494,6 +522,7 @@ test('can delete a recurring task with scope all', function () {
 
 test('can update a recurring task with scope single', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Original',
         'description' => null,
         'time_of_day' => '09:00',
@@ -520,6 +549,7 @@ test('can update a recurring task with scope single', function () {
 
 test('duplicate creates standalone non-recurring task', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Recurring',
         'description' => null,
         'time_of_day' => '09:00',
@@ -545,6 +575,7 @@ test('duplicate creates standalone non-recurring task', function () {
 
 test('editThisAndFollowing adjusts end_count for the new series', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Daily task',
         'description' => null,
         'time_of_day' => '09:00',
@@ -570,6 +601,7 @@ test('editThisAndFollowing adjusts end_count for the new series', function () {
 
 test('editThisAndFollowing reassigns exception tasks to new series', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Original',
         'description' => null,
         'time_of_day' => '09:00',
@@ -600,6 +632,7 @@ test('editThisAndFollowing reassigns exception tasks to new series', function ()
 
 test('createSeries with existing task converts it instead of duplicating', function () {
     $task = $this->user->tasks()->create([
+        'board_id' => $this->board->id,
         'title' => 'Existing meeting',
         'scheduled_at' => '2026-03-11 09:00:00',
         'duration_minutes' => 60,
@@ -608,6 +641,7 @@ test('createSeries with existing task converts it instead of duplicating', funct
     ]);
 
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Existing meeting',
         'description' => null,
         'time_of_day' => '09:00',
@@ -632,6 +666,7 @@ test('createSeries with existing task converts it instead of duplicating', funct
 
 test('creating recurrence series with existing_task_id via controller converts the task', function () {
     $task = $this->user->tasks()->create([
+        'board_id' => $this->board->id,
         'title' => 'My task',
         'scheduled_at' => '2026-03-11 09:00:00',
         'duration_minutes' => 30,
@@ -641,6 +676,7 @@ test('creating recurrence series with existing_task_id via controller converts t
 
     $this->actingAs($this->user)
         ->post(route('recurrence-series.store'), [
+            'board_id' => $this->board->id,
             'existing_task_id' => $task->id,
             'title' => 'My task',
             'start_date' => '2026-03-11',
@@ -660,6 +696,7 @@ test('creating recurrence series with existing_task_id via controller converts t
 
 test('month day clamping works for feb 31st', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Monthly 31st',
         'description' => null,
         'time_of_day' => '09:00',
@@ -681,6 +718,7 @@ test('month day clamping works for feb 31st', function () {
 
 test('schedule with recurrence_scope single marks task as exception', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Daily standup',
         'time_of_day' => '09:00',
         'duration_minutes' => 30,
@@ -708,6 +746,7 @@ test('schedule with recurrence_scope single marks task as exception', function (
 
 test('schedule with recurrence_scope all updates series time and all future instances', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Daily standup',
         'time_of_day' => '09:00',
         'duration_minutes' => 30,
@@ -744,6 +783,7 @@ test('schedule with recurrence_scope all updates series time and all future inst
 
 test('schedule with recurrence_scope following splits the series', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Daily standup',
         'time_of_day' => '09:00',
         'duration_minutes' => 30,
@@ -774,6 +814,7 @@ test('schedule with recurrence_scope following splits the series', function () {
 
 test('editThisAndFollowing double split covers full remaining range', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Daily task',
         'description' => null,
         'time_of_day' => '09:00',
@@ -814,6 +855,7 @@ test('editThisAndFollowing double split covers full remaining range', function (
 
 test('deleteThisAndFollowing double split cascades to successor series', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Daily task',
         'description' => null,
         'time_of_day' => '09:00',
@@ -840,6 +882,7 @@ test('deleteThisAndFollowing double split cascades to successor series', functio
 
 test('editThisAndFollowing triple split resolves correctly', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Daily task',
         'description' => null,
         'time_of_day' => '09:00',
@@ -878,6 +921,7 @@ test('editAllInstances applies changes across split series', function () {
     Carbon::setTestNow('2026-03-11 06:00:00');
 
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Daily task',
         'description' => null,
         'time_of_day' => '09:00',
@@ -912,6 +956,7 @@ test('editAllInstances applies changes across split series', function () {
 
 test('deleteAllInstances removes all split series', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Daily task',
         'description' => null,
         'time_of_day' => '09:00',
@@ -938,6 +983,7 @@ test('deleteAllInstances removes all split series', function () {
 
 test('editThisAndFollowing double split with end_date covers full date range', function () {
     $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
         'title' => 'Daily task',
         'description' => null,
         'time_of_day' => '09:00',
@@ -969,6 +1015,7 @@ test('editThisAndFollowing double split with end_date covers full date range', f
 
 test('schedule without scope on non-recurring task works normally', function () {
     $task = $this->user->tasks()->create([
+        'board_id' => $this->board->id,
         'title' => 'One-off task',
         'scheduled_at' => '2026-03-11 09:00:00',
         'duration_minutes' => 30,

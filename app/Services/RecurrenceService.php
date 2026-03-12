@@ -79,6 +79,7 @@ class RecurrenceService
                 'position' => 0,
                 'location' => $series->location,
                 'location_coordinates' => $series->location_coordinates,
+                'board_id' => $series->board_id,
                 'recurrence_series_id' => $series->id,
                 'recurrence_index' => $series->next_index,
             ]);
@@ -372,6 +373,7 @@ class RecurrenceService
 
         // Build new series data with applied changes (use original/successor end conditions)
         $newSeriesData = [
+            'board_id' => $series->board_id,
             'title' => $changes['title'] ?? $series->title,
             'description' => array_key_exists('description', $changes) ? $changes['description'] : $series->description,
             'time_of_day' => $newTimeOfDay,

@@ -19,6 +19,7 @@ class Task extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'board_id',
         'title',
         'description',
         'scheduled_at',
@@ -54,11 +55,19 @@ class Task extends Model
     }
 
     /**
+     * @return BelongsTo<Board, $this>
+     */
+    public function board(): BelongsTo
+    {
+        return $this->belongsTo(Board::class);
+    }
+
+    /**
      * @return BelongsToMany<Tag, $this>
      */
     public function tags(): BelongsToMany
     {
-        return $this->belongsToMany(Tag::class);
+        return $this->belongsToMany(Tag::class)->orderBy('name');
     }
 
     /**
