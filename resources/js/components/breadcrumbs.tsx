@@ -8,6 +8,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { toUrl } from "@/lib/utils";
 import type { BreadcrumbItem as BreadcrumbItemType } from "@/types";
 
 export function Breadcrumbs({ breadcrumbs }: { breadcrumbs: BreadcrumbItemType[] }) {
@@ -19,7 +20,7 @@ export function Breadcrumbs({ breadcrumbs }: { breadcrumbs: BreadcrumbItemType[]
             {breadcrumbs.map((item, index) => {
               const isLast = index === breadcrumbs.length - 1;
               return (
-                <Fragment key={index}>
+                <Fragment key={toUrl(item.href)}>
                   <BreadcrumbItem>
                     {isLast ? (
                       <BreadcrumbPage>{item.title}</BreadcrumbPage>

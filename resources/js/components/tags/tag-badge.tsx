@@ -46,9 +46,14 @@ export function TagBadge({ tag, size = "default", onRemove, onColorChange }: Tag
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <span role="button" tabIndex={0} onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          tabIndex={0}
+          onClick={(e) => e.stopPropagation()}
+          className="appearance-none border-0 bg-transparent p-0"
+        >
           {badge}
-        </span>
+        </button>
       </PopoverTrigger>
       <PopoverContent
         className="w-auto p-2"

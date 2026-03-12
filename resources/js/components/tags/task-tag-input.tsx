@@ -140,7 +140,12 @@ export function TaskTagInput({
       }}
     >
       <PopoverAnchor asChild>
-        <div className="flex flex-wrap items-center gap-1" onMouseDown={handleContainerMouseDown}>
+        {/* biome-ignore lint/a11y/useSemanticElements: Composite tag input widget */}
+        <div
+          role="group"
+          className="flex flex-wrap items-center gap-1"
+          onMouseDown={handleContainerMouseDown}
+        >
           {taskTags.map((tag) => (
             <TagBadge key={tag.id} tag={tag} size="sm" onRemove={() => onTagRemove(tag.id)} />
           ))}

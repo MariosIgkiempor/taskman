@@ -75,6 +75,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
                         className="h-2.5 w-2.5"
+                        aria-hidden="true"
                       >
                         <path
                           d="M7.70833 6.95834V2.79167H3.54167M2.5 8L7.5 3.00001"
@@ -107,6 +108,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
                         className="h-2.5 w-2.5"
+                        aria-hidden="true"
                       >
                         <path
                           d="M7.70833 6.95834V2.79167H3.54167M2.5 8L7.5 3.00001"
@@ -137,6 +139,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 viewBox="0 0 438 104"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
               >
                 <path d="M17.2036 -3H0V102.197H49.5189V86.7187H17.2036V-3Z" fill="currentColor" />
                 <path
@@ -166,6 +169,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 viewBox="0 0 440 376"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
               >
                 <g className="starting:translate-y-4 translate-y-0 opacity-100 starting:opacity-0 transition-all delay-300 duration-750">
                   <path
@@ -483,6 +487,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 viewBox="0 0 440 376"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
               >
                 <g className="starting:translate-y-4 translate-y-0 opacity-100 starting:opacity-0 transition-all delay-300 duration-750">
                   <path

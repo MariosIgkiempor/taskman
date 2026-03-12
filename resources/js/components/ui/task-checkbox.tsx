@@ -9,6 +9,7 @@ interface TaskCheckboxProps {
 
 export function TaskCheckbox({ checked, onCheckedChange, className }: TaskCheckboxProps) {
   return (
+    // biome-ignore lint/a11y/useSemanticElements: Custom circular checkbox styled as button
     <button
       type="button"
       role="checkbox"

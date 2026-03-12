@@ -21,6 +21,7 @@ const prefersDark = (): boolean => {
 const setCookie = (name: string, value: string, days = 365): void => {
   if (typeof document === "undefined") return;
   const maxAge = days * 24 * 60 * 60;
+  // biome-ignore lint/suspicious/noDocumentCookie: Intentional cookie utility for appearance persistence
   document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
 };
 
@@ -49,7 +50,11 @@ const subscribe = (callback: () => void) => {
   return () => listeners.delete(callback);
 };
 
-const notify = (): void => listeners.forEach((listener) => listener());
+const notify = (): void => {
+  for (const listener of listeners) {
+    listener();
+  }
+};
 
 const mediaQuery = (): MediaQueryList | null => {
   if (typeof window === "undefined") return null;
