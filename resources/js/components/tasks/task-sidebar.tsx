@@ -19,7 +19,7 @@ interface TaskSidebarProps {
   selectedTagIds: Set<number>;
   onTagFilterToggle: (tagId: number) => void;
   onTagCreated: (tag: Tag) => void;
-  onTaskClick: (task: Task, event: React.MouseEvent) => void;
+  onTaskClick: (task: Task, event: React.MouseEvent, sourceEl?: HTMLElement) => void;
 }
 
 export const TaskSidebar = forwardRef<HTMLDivElement, TaskSidebarProps>(function TaskSidebar(

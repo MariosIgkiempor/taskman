@@ -17,7 +17,7 @@ interface WeeklyCalendarProps {
   weekStart: string;
   sidebarRef: React.RefObject<HTMLDivElement | null>;
   selectedTagIds: Set<number>;
-  onTaskClick: (task: Task, event: React.MouseEvent) => void;
+  onTaskClick: (task: Task, event: React.MouseEvent, sourceEl?: HTMLElement) => void;
   onScheduledWithNotifiedReminders: (task: Task) => void;
 }
 
@@ -349,7 +349,7 @@ export function WeeklyCalendar({
     const taskId = info.event.extendedProps.taskId as number;
     const task = tasksRef.current.find((t) => t.id === taskId);
     if (task) {
-      onTaskClick(task, info.jsEvent as unknown as React.MouseEvent);
+      onTaskClick(task, info.jsEvent as unknown as React.MouseEvent, info.el);
     }
   };
 

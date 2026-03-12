@@ -9,7 +9,7 @@ import type { Task } from "@/types";
 interface TaskCardProps {
   task: Task;
   dimmed?: boolean;
-  onTaskClick: (task: Task, event: React.MouseEvent) => void;
+  onTaskClick: (task: Task, event: React.MouseEvent, sourceEl?: HTMLElement) => void;
 }
 
 export function TaskCard({ task, dimmed, onTaskClick }: TaskCardProps) {

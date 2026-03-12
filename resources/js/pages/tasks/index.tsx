@@ -52,17 +52,14 @@ export default function TasksIndex({
   const [selectedTagIds, setSelectedTagIds] = useState<Set<number>>(new Set());
   const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [anchorPoint, setAnchorPoint] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
+  const [sourceElement, setSourceElement] = useState<HTMLElement | null>(null);
   const [rearmTask, setRearmTask] = useState<Task | null>(null);
   const [prevWeekStart, setPrevWeekStart] = useState(currentWeekStart);
 
   if (currentWeekStart !== prevWeekStart) {
     setPrevWeekStart(currentWeekStart);
     setEditingTask(null);
-    setAnchorPoint(null);
+    setSourceElement(null);
   }
 
   if (tags !== prevTags) {
@@ -107,14 +104,17 @@ export default function TasksIndex({
     });
   }, []);
 
-  const handleTaskClick = useCallback((task: Task, event: React.MouseEvent) => {
-    setEditingTask(task);
-    setAnchorPoint({ x: event.clientX, y: event.clientY });
-  }, []);
+  const handleTaskClick = useCallback(
+    (task: Task, event: React.MouseEvent, sourceEl?: HTMLElement) => {
+      setEditingTask(task);
+      setSourceElement(sourceEl ?? (event.currentTarget as HTMLElement));
+    },
+    [],
+  );
 
   const handleCloseEdit = useCallback(() => {
     setEditingTask(null);
-    setAnchorPoint(null);
+    setSourceElement(null);
   }, []);
 
   const handleScheduledWithNotifiedReminders = useCallback((task: Task) => {
@@ -180,7 +180,7 @@ export default function TasksIndex({
       </div>
       <TaskEditPopover
         task={currentEditingTask}
-        anchorPoint={anchorPoint}
+        sourceElement={sourceElement}
         workspace={workspace}
         tags={localTags}
         onClose={handleCloseEdit}

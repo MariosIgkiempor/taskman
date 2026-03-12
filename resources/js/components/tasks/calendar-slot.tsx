@@ -6,7 +6,7 @@ import type { Task } from "@/types";
 interface CalendarSlotProps {
   id: string;
   tasks: Task[];
-  onTaskClick: (task: Task, event: React.MouseEvent) => void;
+  onTaskClick: (task: Task, event: React.MouseEvent, sourceEl?: HTMLElement) => void;
 }
 
 export function CalendarSlot({ id, tasks, onTaskClick }: CalendarSlotProps) {
