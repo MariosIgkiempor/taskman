@@ -75,6 +75,7 @@ export function TaskEditPopover({
     isOpen,
     sourceElement,
     onClose,
+    switchSelector: "[data-task-id], .fc-event",
   });
 
   if (!isVisible || !task) return null;
