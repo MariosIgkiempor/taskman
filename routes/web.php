@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BoardController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GeocodeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RecurrenceSeriesController;
@@ -21,7 +22,7 @@ Route::inertia('/', 'welcome', [
 Route::get('invite/{token}', [WorkspaceInviteController::class, 'accept'])->name('workspaces.invites.accept');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', fn () => redirect()->route('tasks.index', auth()->user()->personalWorkspace))->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
 
     // Workspaces
     Route::get('workspaces', [WorkspaceController::class, 'index'])->name('workspaces.index');
