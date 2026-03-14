@@ -10,6 +10,8 @@ interface UseMorphPopoverOptions {
   isOpen: boolean;
   sourceElement: HTMLElement | null;
   onClose: () => void;
+  /** CSS selector — clicks on matching elements skip close (they trigger a switch instead) */
+  switchSelector?: string;
 }
 
 interface MorphPopoverState {
@@ -50,6 +52,7 @@ export function useMorphPopover({
   isOpen,
   sourceElement,
   onClose,
+  switchSelector,
 }: UseMorphPopoverOptions): UseMorphPopoverReturn {
   const portalRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -60,6 +63,7 @@ export function useMorphPopover({
   const [morphState, setMorphState] = useState<MorphPopoverState | null>(null);
   const isClosingRef = useRef(false);
   const sourceElementRef = useRef(sourceElement);
+  const prevSourceRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
 
   onCloseRef.current = onClose;
@@ -71,7 +75,7 @@ export function useMorphPopover({
       return;
     }
 
-    // Cancel any running close animation
+    // Cancel tracked animations
     animationRef.current?.cancel();
     animationRef.current = null;
     contentAnimationRef.current?.cancel();
@@ -79,11 +83,32 @@ export function useMorphPopover({
     cancelAnimationFrame(rafRef.current);
     isClosingRef.current = false;
 
+    // Restore visibility of previous source element when switching tasks
+    if (prevSourceRef.current && prevSourceRef.current !== sourceElement) {
+      prevSourceRef.current.style.visibility = "";
+    }
+    prevSourceRef.current = sourceElement;
+
     const sourceRect = sourceElement.getBoundingClientRect();
 
-    // Store source rect so portal can render at the source position initially (hidden)
-    setMorphState({ sourceRect });
-    setIsVisible(true);
+    // Cancel ALL animations on the portal/content (including stale fill:forwards
+    // from completed animations whose refs were cleared by onfinish)
+    const portal = portalRef.current;
+    const content = contentRef.current;
+    if (portal) {
+      for (const anim of portal.getAnimations()) anim.cancel();
+      portal.style.transform = "";
+    }
+    if (content) {
+      for (const anim of content.getAnimations()) anim.cancel();
+      content.style.opacity = "";
+    }
+
+    if (!isVisible) {
+      // First open: position portal at source rect to prevent flash at (0,0)
+      setMorphState({ sourceRect });
+      setIsVisible(true);
+    }
 
     // Defer animation to next frame so portal is mounted and measurable
     rafRef.current = requestAnimationFrame(() => {
@@ -231,6 +256,7 @@ export function useMorphPopover({
       setIsVisible(false);
       setMorphState(null);
       if (source) source.style.visibility = "";
+      prevSourceRef.current = null;
       onCloseRef.current();
       // Reset after onClose to prevent re-entry during the close call
       isClosingRef.current = false;
@@ -254,13 +280,13 @@ export function useMorphPopover({
     const sourceRect = canReverse ? source?.getBoundingClientRect() : null;
 
     if (!canReverse || !sourceRect) {
-      // Just fade out
-      const fadeOut = portal.animate([{ opacity: 1 }, { opacity: 0 }], {
+      // Just fade out — store in animationRef so it can be canceled by a switch
+      animationRef.current = portal.animate([{ opacity: 1 }, { opacity: 0 }], {
         duration: 150,
         easing: "ease-in",
         fill: "forwards",
       });
-      fadeOut.onfinish = finish;
+      animationRef.current.onfinish = finish;
       return;
     }
 
@@ -326,6 +352,9 @@ export function useMorphPopover({
       if (target.closest("[data-radix-popper-content-wrapper]")) return;
       if (target.closest("[data-slot='select-content']")) return;
 
+      // Don't close if clicking a switch target — the click will open a new popover
+      if (switchSelector && target.closest(switchSelector)) return;
+
       closeWithAnimation();
     };
 
@@ -365,6 +394,9 @@ export function useMorphPopover({
       contentAnimationRef.current?.cancel();
       const source = sourceElementRef.current;
       if (source) source.style.visibility = "";
+      if (prevSourceRef.current) {
+        prevSourceRef.current.style.visibility = "";
+      }
     };
   }, []);
 
