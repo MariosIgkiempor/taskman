@@ -69,7 +69,7 @@ export function TaskEditPopover({
   onTagCreated,
   onScheduledWithNotifiedReminders,
 }: TaskEditPopoverProps) {
-  const isOpen = task !== null && sourceElement !== null;
+  const isOpen = task !== null;
 
   const { portalRef, contentRef, isVisible, initialStyle } = useMorphPopover({
     isOpen,
