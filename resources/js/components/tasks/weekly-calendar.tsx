@@ -476,6 +476,12 @@ export function WeeklyCalendar({
           slotLabelFormat={{ hour: "numeric", meridiem: "short" }}
           eventDurationEditable={true}
           eventContent={renderEventContent}
+          eventDidMount={(info) => {
+            const taskId = info.event.extendedProps.taskId;
+            if (taskId != null) {
+              info.el.setAttribute("data-task-id", String(taskId));
+            }
+          }}
           nowIndicator={true}
         />
       </div>

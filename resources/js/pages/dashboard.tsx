@@ -72,6 +72,24 @@ function StatCard({
   );
 }
 
+function taskDeepLink(task: DashboardTask): string {
+  const base = tasksIndex.url(task.board.workspace);
+  const params = new URLSearchParams();
+  params.set("task", String(task.id));
+  if (task.scheduled_at) {
+    const date = new Date(task.scheduled_at);
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(date);
+    monday.setDate(diff);
+    const y = monday.getFullYear();
+    const m = String(monday.getMonth() + 1).padStart(2, "0");
+    const d = String(monday.getDate()).padStart(2, "0");
+    params.set("week", `${y}-${m}-${d}`);
+  }
+  return `${base}?${params.toString()}`;
+}
+
 function TaskRow({
   task,
   variant = "default",
@@ -81,7 +99,7 @@ function TaskRow({
 }) {
   return (
     <Link
-      href={tasksIndex.url(task.board.workspace)}
+      href={taskDeepLink(task)}
       className="group flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/50"
     >
       <div className="min-w-0 flex-1">

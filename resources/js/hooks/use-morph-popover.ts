@@ -65,7 +65,7 @@ export function useMorphPopover({
   onCloseRef.current = onClose;
   sourceElementRef.current = sourceElement;
 
-  // Open animation
+  // Open animation (with source element — FLIP morph)
   useEffect(() => {
     if (!isOpen || !sourceElement) {
       return;
@@ -146,6 +146,67 @@ export function useMorphPopover({
       contentAnimationRef.current.onfinish = () => {
         content.style.opacity = "";
         contentAnimationRef.current = null;
+      };
+    });
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, [isOpen, sourceElement]);
+
+  // Open animation (without source element — fade in at center-right)
+  useEffect(() => {
+    if (!isOpen || sourceElement) {
+      return;
+    }
+
+    animationRef.current?.cancel();
+    animationRef.current = null;
+    contentAnimationRef.current?.cancel();
+    contentAnimationRef.current = null;
+    cancelAnimationFrame(rafRef.current);
+    isClosingRef.current = false;
+
+    // Position in the center of the main content area (right of sidebar)
+    const sidebarWidth = 320;
+    const contentAreaStart = sidebarWidth;
+    const contentAreaWidth = window.innerWidth - contentAreaStart;
+    const centerLeft = contentAreaStart + contentAreaWidth / 2 - POPOVER_WIDTH / 2;
+    const centerTop = window.innerHeight / 3;
+    const syntheticRect = new DOMRect(centerLeft, centerTop, POPOVER_WIDTH, 0);
+
+    setMorphState({ sourceRect: syntheticRect });
+    setIsVisible(true);
+
+    rafRef.current = requestAnimationFrame(() => {
+      const portal = portalRef.current;
+      const content = contentRef.current;
+      if (!portal || !content) return;
+
+      const portalHeight = portal.offsetHeight;
+      const top = Math.min(centerTop, window.innerHeight - COLLISION_PADDING - portalHeight);
+      const left = Math.min(centerLeft, window.innerWidth - COLLISION_PADDING - POPOVER_WIDTH);
+
+      portal.style.left = `${Math.max(COLLISION_PADDING, left)}px`;
+      portal.style.top = `${Math.max(COLLISION_PADDING, top)}px`;
+      portal.style.width = `${POPOVER_WIDTH}px`;
+
+      // Simple fade + slide-up
+      animationRef.current = portal.animate(
+        [
+          { opacity: 0, transform: "translateY(8px)" },
+          { opacity: 1, transform: "translateY(0)" },
+        ],
+        {
+          duration: OPEN_DURATION,
+          easing: "cubic-bezier(0.16, 1, 0.3, 1)",
+          fill: "forwards",
+        },
+      );
+
+      animationRef.current.onfinish = () => {
+        portal.style.transform = "";
+        animationRef.current = null;
       };
     });
 

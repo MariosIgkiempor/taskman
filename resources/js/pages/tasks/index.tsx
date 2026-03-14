@@ -1,5 +1,5 @@
-import { Head, router } from "@inertiajs/react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { Head, router, usePage } from "@inertiajs/react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TaskReminderController from "@/actions/App/Http/Controllers/TaskReminderController";
 import { BoardTabs } from "@/components/tasks/board-tabs";
 import { TaskEditPopover } from "@/components/tasks/task-edit-popover";
@@ -46,6 +46,9 @@ export default function TasksIndex({
     },
   ];
 
+  const { url } = usePage();
+  const deepLinkHandled = useRef(false);
+
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [localTags, setLocalTags] = useState<Tag[]>(tags);
   const [prevTags, setPrevTags] = useState<Tag[]>(tags);
@@ -71,6 +74,36 @@ export default function TasksIndex({
       return next.size === prev.size ? prev : next;
     });
   }
+
+  // Deep-link: auto-open a task from URL ?task=ID (e.g. from dashboard)
+  useEffect(() => {
+    if (deepLinkHandled.current) return;
+
+    const params = new URLSearchParams(url.split("?")[1] ?? "");
+    const taskId = params.get("task");
+    if (!taskId) return;
+
+    const id = Number(taskId);
+    const allTasks = [...unscheduledTasks, ...scheduledTasks, ...completedTasks];
+    const found = allTasks.find((t) => t.id === id);
+    if (!found) return;
+
+    deepLinkHandled.current = true;
+
+    // Clean the URL so the param doesn't persist on reload
+    const cleanUrl = url.split("?")[0];
+    const remaining = new URLSearchParams(params);
+    remaining.delete("task");
+    const qs = remaining.toString();
+    window.history.replaceState({}, "", qs ? `${cleanUrl}?${qs}` : cleanUrl);
+
+    // Wait for FullCalendar / sidebar to render, then find the element
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(`[data-task-id="${id}"]`);
+      setEditingTask(found);
+      setSourceElement(el);
+    });
+  }, [url, unscheduledTasks, scheduledTasks, completedTasks]);
 
   const filteredUnscheduledTasks = useMemo(
     () =>
