@@ -376,25 +376,36 @@ function TaskEditForm({
     setShowRecurrencePicker(false);
     if (!task.scheduled_at) return;
 
-    const parsed = parseScheduledAt(task.scheduled_at);
-    router.post(
-      RecurrenceSeriesController.store.url(),
-      {
-        existing_task_id: !task.recurrence_series_id ? task.id : undefined,
-        board_id: task.board_id,
-        title: task.title,
-        description: task.description,
-        start_date: parsed.date,
-        time_of_day: parsed.time,
-        duration_minutes: task.duration_minutes,
-        location: task.location,
-        location_coordinates: task.location_coordinates,
-        tag_ids: task.tags.map((t) => t.id),
-        reminders: task.reminders.map((r) => r.minutes_before),
-        ...rule,
-      },
-      { preserveScroll: true },
-    );
+    if (task.recurrence_series_id) {
+      router.patch(
+        RecurrenceSeriesController.update.url(task.recurrence_series_id),
+        {
+          ...rule,
+          tag_ids: task.tags.map((t) => t.id),
+        },
+        { preserveScroll: true },
+      );
+    } else {
+      const parsed = parseScheduledAt(task.scheduled_at);
+      router.post(
+        RecurrenceSeriesController.store.url(),
+        {
+          existing_task_id: task.id,
+          board_id: task.board_id,
+          title: task.title,
+          description: task.description,
+          start_date: parsed.date,
+          time_of_day: parsed.time,
+          duration_minutes: task.duration_minutes,
+          location: task.location,
+          location_coordinates: task.location_coordinates,
+          tag_ids: task.tags.map((t) => t.id),
+          reminders: task.reminders.map((r) => r.minutes_before),
+          ...rule,
+        },
+        { preserveScroll: true },
+      );
+    }
   };
 
   const handleRecurrenceRemove = () => {

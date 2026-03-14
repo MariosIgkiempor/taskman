@@ -1013,6 +1013,141 @@ test('editThisAndFollowing double split with end_date covers full date range', f
     expect($this->user->tasks()->count())->toBe(20);
 });
 
+test('editAllInstances with frequency change regenerates future instances', function () {
+    Carbon::setTestNow('2026-03-11 06:00:00');
+
+    $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
+        'title' => 'Daily task',
+        'description' => null,
+        'time_of_day' => '09:00',
+        'duration_minutes' => 30,
+        'frequency' => 'daily',
+        'interval' => 1,
+        'start_date' => '2026-03-11',
+    ]);
+
+    $initialCount = $series->tasks()->count();
+
+    // Change from daily to weekly
+    $this->service->editAllInstances($series, ['frequency' => 'weekly']);
+
+    $series->refresh();
+    expect($series->frequency)->toBe('weekly');
+
+    // Weekly tasks should be far fewer than daily tasks
+    $tasks = $series->tasks()->orderBy('scheduled_at')->get();
+    expect($tasks->count())->toBeGreaterThan(0);
+    expect($tasks->count())->toBeLessThan($initialCount);
+
+    // All regenerated tasks should fall on the same day of the week
+    $days = $tasks->map(fn (Task $t) => $t->scheduled_at->dayOfWeekIso)->unique();
+    expect($days->count())->toBe(1);
+});
+
+test('editAllInstances with rule change preserves completed tasks', function () {
+    Carbon::setTestNow('2026-03-11 06:00:00');
+
+    $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
+        'title' => 'Daily task',
+        'description' => null,
+        'time_of_day' => '09:00',
+        'duration_minutes' => 30,
+        'frequency' => 'daily',
+        'interval' => 1,
+        'start_date' => '2026-03-11',
+        'end_count' => 10,
+    ]);
+
+    // Mark first task as completed
+    $firstTask = $series->tasks()->where('recurrence_index', 0)->first();
+    $firstTask->update(['is_completed' => true]);
+
+    // Change frequency
+    $this->service->editAllInstances($series, ['frequency' => 'weekly']);
+
+    // Completed task should still exist
+    expect(Task::find($firstTask->id))->not->toBeNull();
+    expect(Task::find($firstTask->id)->is_completed)->toBeTrue();
+});
+
+test('editAllInstances with rule change preserves exception tasks', function () {
+    Carbon::setTestNow('2026-03-11 06:00:00');
+
+    $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
+        'title' => 'Daily task',
+        'description' => null,
+        'time_of_day' => '09:00',
+        'duration_minutes' => 30,
+        'frequency' => 'daily',
+        'interval' => 1,
+        'start_date' => '2026-03-11',
+        'end_count' => 10,
+    ]);
+
+    // Create an exception at index 2
+    $exceptionTask = $series->tasks()->where('recurrence_index', 2)->first();
+    $this->service->editSingleInstance($exceptionTask, ['title' => 'My Exception']);
+
+    // Change frequency
+    $this->service->editAllInstances($series, ['frequency' => 'weekly']);
+
+    // Exception task should still exist with its custom title
+    $exceptionTask->refresh();
+    expect($exceptionTask->is_recurrence_exception)->toBeTrue();
+    expect($exceptionTask->title)->toBe('My Exception');
+});
+
+test('editAllInstances with rule change propagates across split series', function () {
+    Carbon::setTestNow('2026-03-11 06:00:00');
+
+    $series = $this->service->createSeries($this->user, [
+        'board_id' => $this->board->id,
+        'title' => 'Daily task',
+        'description' => null,
+        'time_of_day' => '09:00',
+        'duration_minutes' => 30,
+        'frequency' => 'daily',
+        'interval' => 1,
+        'end_count' => 10,
+        'start_date' => '2026-03-11',
+    ]);
+
+    $totalBefore = $this->user->tasks()->count();
+
+    // Split at index 5
+    $taskAt5 = $series->tasks()->where('recurrence_index', 5)->first();
+    $seriesB = $this->service->editThisAndFollowing($taskAt5, ['duration_minutes' => 45]);
+
+    // Change interval on all via the original series (daily every 3 days instead of every day)
+    $this->service->editAllInstances($series, ['interval' => 3]);
+
+    $series->refresh();
+    $seriesB->refresh();
+
+    expect($series->interval)->toBe(3);
+    expect($seriesB->interval)->toBe(3);
+
+    // Verify tasks in each series have correct 3-day spacing
+    foreach ([$series, $seriesB] as $s) {
+        $dates = $s->tasks()
+            ->where('is_recurrence_exception', false)
+            ->where('is_completed', false)
+            ->orderBy('scheduled_at')
+            ->pluck('scheduled_at')
+            ->map(fn ($d) => Carbon::parse($d)->toDateString())
+            ->values()
+            ->all();
+
+        for ($i = 1; $i < count($dates); $i++) {
+            $diff = Carbon::parse($dates[$i - 1])->diffInDays(Carbon::parse($dates[$i]));
+            expect((int) $diff)->toBe(3);
+        }
+    }
+});
+
 test('schedule without scope on non-recurring task works normally', function () {
     $task = $this->user->tasks()->create([
         'board_id' => $this->board->id,

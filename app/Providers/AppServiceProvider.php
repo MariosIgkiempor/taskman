@@ -3,8 +3,11 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -24,6 +27,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureModels();
+        $this->configureHttp();
+        $this->configureVite();
     }
 
     /**
@@ -46,5 +52,32 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+    }
+
+    /**
+     * Configure default model settings.
+     */
+    protected function configureModels(): void
+    {
+        Model::automaticallyEagerLoadRelationships();
+        Model::shouldBeStrict();
+    }
+
+    /**
+     * Force HTTPS in non-local environments.
+     */
+    private function configureHttp(): void
+    {
+        if (! $this->app->environment('local')) {
+            URL::forceScheme('https');
+        }
+    }
+
+    /**
+     * Optimize Vite asset loading strategy.
+     */
+    private function configureVite(): void
+    {
+        Vite::usePrefetchStrategy('aggressive');
     }
 }

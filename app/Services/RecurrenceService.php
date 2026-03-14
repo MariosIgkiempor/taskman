@@ -429,32 +429,72 @@ class RecurrenceService
             $seriesUpdates['time_of_day'] = $changes['time_of_day'];
         }
 
+        // Collect recurrence rule field changes
+        $ruleFields = ['frequency', 'interval', 'days_of_week', 'month_day', 'month_week_ordinal', 'month_week_day', 'end_date', 'end_count'];
+        $ruleChanges = [];
+        foreach ($ruleFields as $field) {
+            if (array_key_exists($field, $changes)) {
+                $seriesUpdates[$field] = $changes[$field];
+                $ruleChanges[$field] = $changes[$field];
+            }
+        }
+
+        $hasRuleChanges = $ruleChanges !== [];
+
         foreach ($allSeries as $relatedSeries) {
             if ($seriesUpdates) {
                 $relatedSeries->update($seriesUpdates);
             }
 
-            // Update all future non-exception, non-completed instances
-            $query = $relatedSeries->tasks()
-                ->where('is_recurrence_exception', false)
-                ->where('is_completed', false)
-                ->where('scheduled_at', '>=', now());
-
-            if ($taskUpdates) {
-                $query->update($taskUpdates);
-            }
-
-            // If time_of_day changed, update scheduled_at on future instances
-            if (isset($changes['time_of_day'])) {
-                $futureTasks = $relatedSeries->tasks()
+            if ($hasRuleChanges) {
+                // Delete future non-exception, non-completed instances and regenerate
+                $relatedSeries->tasks()
                     ->where('is_recurrence_exception', false)
                     ->where('is_completed', false)
                     ->where('scheduled_at', '>=', now())
-                    ->get();
+                    ->delete();
 
-                foreach ($futureTasks as $task) {
-                    $newScheduledAt = $task->scheduled_at->copy()->setTimeFromTimeString($changes['time_of_day']);
-                    $task->update(['scheduled_at' => $newScheduledAt]);
+                // Recalculate next_index from remaining tasks
+                $lastTask = $relatedSeries->tasks()->orderByDesc('recurrence_index')->first();
+                $relatedSeries->next_index = $lastTask ? $lastTask->recurrence_index + 1 : 0;
+                $relatedSeries->generated_until = $lastTask
+                    ? Carbon::parse($lastTask->scheduled_at)->toDateString()
+                    : Carbon::parse($relatedSeries->start_date)->subDay();
+                $relatedSeries->save();
+
+                // Apply content updates to remaining non-exception, non-completed tasks
+                if ($taskUpdates) {
+                    $relatedSeries->tasks()
+                        ->where('is_recurrence_exception', false)
+                        ->where('is_completed', false)
+                        ->update($taskUpdates);
+                }
+
+                $horizon = Carbon::parse(now())->addWeeks(12);
+                $this->generateInstances($relatedSeries, $horizon);
+            } else {
+                // Update all future non-exception, non-completed instances
+                $query = $relatedSeries->tasks()
+                    ->where('is_recurrence_exception', false)
+                    ->where('is_completed', false)
+                    ->where('scheduled_at', '>=', now());
+
+                if ($taskUpdates) {
+                    $query->update($taskUpdates);
+                }
+
+                // If time_of_day changed, update scheduled_at on future instances
+                if (isset($changes['time_of_day'])) {
+                    $futureTasks = $relatedSeries->tasks()
+                        ->where('is_recurrence_exception', false)
+                        ->where('is_completed', false)
+                        ->where('scheduled_at', '>=', now())
+                        ->get();
+
+                    foreach ($futureTasks as $task) {
+                        $newScheduledAt = $task->scheduled_at->copy()->setTimeFromTimeString($changes['time_of_day']);
+                        $task->update(['scheduled_at' => $newScheduledAt]);
+                    }
                 }
             }
 
