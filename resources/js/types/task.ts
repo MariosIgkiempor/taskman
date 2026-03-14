@@ -46,6 +46,33 @@ export type Task = {
   reminders: TaskReminder[];
 };
 
+export type DashboardTask = {
+  id: number;
+  title: string;
+  scheduled_at: string | null;
+  is_completed: boolean;
+  duration_minutes: number;
+  tags: Tag[];
+  board: {
+    id: number;
+    name: string;
+    color: string | null;
+    workspace: {
+      id: number;
+      name: string;
+      is_personal: boolean;
+    };
+  };
+};
+
+export type WorkspaceBreakdown = {
+  id: number;
+  name: string;
+  is_personal: boolean;
+  total_tasks: number;
+  completed_tasks: number;
+};
+
 export type AppNotification = {
   id: string;
   type: string;
