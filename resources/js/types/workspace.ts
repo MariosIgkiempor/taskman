@@ -5,6 +5,7 @@ export type Workspace = {
   name: string;
   is_personal: boolean;
   owner_id: number;
+  open_tasks_count: number;
   pivot?: { role: WorkspaceRole };
 };
 

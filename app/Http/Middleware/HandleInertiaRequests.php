@@ -43,7 +43,12 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'currentWorkspace' => fn () => $request->route('workspace'),
-            'workspaces' => fn () => $request->user()?->workspaces()->withPivot('role')->orderByRaw('is_personal DESC')->orderBy('name')->get() ?? [],
+            'workspaces' => fn () => $request->user()?->workspaces()
+                ->withPivot('role')
+                ->withCount(['tasks as open_tasks_count' => fn ($query) => $query->where('is_completed', false)])
+                ->orderByRaw('is_personal DESC')
+                ->orderBy('name')
+                ->get() ?? [],
             'unreadNotificationsCount' => fn () => $request->user()?->unreadNotifications()->count() ?? 0,
         ];
     }
