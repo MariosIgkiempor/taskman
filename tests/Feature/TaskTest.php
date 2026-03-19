@@ -226,6 +226,20 @@ test('index with week param returns tasks for that specific week', function () {
     expect($props['currentWeekStart'])->toMatch('/^\d{4}-\d{2}-\d{2}$/');
 });
 
+test('index with future week param crossing month boundary returns correct week', function () {
+    $user = createUserWithWorkspace();
+
+    $nextMonthMonday = now()->endOfMonth()->next('Monday');
+
+    $response = $this->actingAs($user)
+        ->get(route('tasks.index', ['workspace' => $user->personalWorkspace, 'week' => $nextMonthMonday->toDateString()]))
+        ->assertOk();
+
+    $props = $response->original->getData()['page']['props'];
+
+    expect($props['currentWeekStart'])->toBe($nextMonthMonday->toDateString());
+});
+
 test('index with invalid week param returns validation error', function () {
     $user = createUserWithWorkspace();
 
