@@ -59,6 +59,27 @@ test('any member can view workspace settings', function () {
         ->assertOk();
 });
 
+test('workspace settings includes members and invites', function () {
+    $owner = createUserWithWorkspace();
+    $member = createUserWithWorkspace();
+
+    $workspace = Workspace::factory()
+        ->withMember($owner, WorkspaceRole::Owner)
+        ->withMember($member, WorkspaceRole::Member)
+        ->create(['owner_id' => $owner->id]);
+
+    $this->actingAs($owner)
+        ->get(route('workspaces.settings', $workspace))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('workspaces/settings')
+            ->has('members', 2)
+            ->has('invites')
+            ->has('role')
+            ->has('workspace')
+        );
+});
+
 test('non-member cannot view workspace settings', function () {
     $owner = createUserWithWorkspace();
     $nonMember = createUserWithWorkspace();

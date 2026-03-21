@@ -10,7 +10,7 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
         <div className="flex flex-col gap-8">
           <div className="flex flex-col items-center gap-5">
             <Link href={home()} className="flex flex-col items-center gap-2 font-medium">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-primary">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-b from-[oklch(0.55_0.16_252)] to-[oklch(0.48_0.18_252)]">
                 <AppLogoIcon className="size-5 fill-current text-white" />
               </div>
               <span className="sr-only">{title}</span>

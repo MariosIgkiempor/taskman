@@ -28,7 +28,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('workspaces', [WorkspaceController::class, 'index'])->name('workspaces.index');
     Route::post('workspaces', [WorkspaceController::class, 'store'])->name('workspaces.store');
     Route::get('workspaces/{workspace}/settings', [WorkspaceController::class, 'settings'])->name('workspaces.settings');
-    Route::get('workspaces/{workspace}/members-page', [WorkspaceController::class, 'members'])->name('workspaces.members.page');
     Route::patch('workspaces/{workspace}', [WorkspaceController::class, 'update'])->name('workspaces.update');
     Route::delete('workspaces/{workspace}', [WorkspaceController::class, 'destroy'])->name('workspaces.destroy');
 
