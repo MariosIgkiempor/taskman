@@ -177,7 +177,7 @@ export function useMorphPopover({
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-  }, [isOpen, sourceElement]);
+  }, [isOpen, sourceElement, isVisible]);
 
   // Open animation (without source element — fade in at center-right)
   useEffect(() => {
@@ -370,7 +370,7 @@ export function useMorphPopover({
         document.removeEventListener("mousedown", handleMouseDown);
       }
     };
-  }, [isVisible, closeWithAnimation]);
+  }, [isVisible, closeWithAnimation, switchSelector]);
 
   // Escape key dismiss
   useEffect(() => {

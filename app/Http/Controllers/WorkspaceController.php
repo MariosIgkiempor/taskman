@@ -42,16 +42,6 @@ class WorkspaceController extends Controller
 
         return Inertia::render('workspaces/settings', [
             'workspace' => $workspace,
-            'role' => $workspace->roleFor($request->user())->value,
-        ]);
-    }
-
-    public function members(Request $request, Workspace $workspace): Response
-    {
-        Gate::authorize('view', $workspace);
-
-        return Inertia::render('workspaces/members', [
-            'workspace' => $workspace,
             'members' => $workspace->members()
                 ->select('users.id', 'users.name', 'users.email')
                 ->get()

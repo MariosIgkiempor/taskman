@@ -35,7 +35,7 @@ export function TaskCard({ task, dimmed, onTaskClick }: TaskCardProps) {
       data-task-title={task.title}
       role="button"
       tabIndex={0}
-      className={`group flex cursor-grab items-center gap-2.5 rounded-lg bg-card p-2.5 text-sm transition-all duration-100 hover:bg-accent active:cursor-grabbing ${
+      className={`group flex cursor-grab items-center gap-2.5 rounded-lg border border-border/40 bg-card p-2.5 text-sm shadow-[0_1px_2px_oklch(0.15_0.01_250/0.03)] transition-all duration-150 hover:bg-accent hover:shadow-[0_2px_4px_oklch(0.15_0.01_250/0.06)] active:cursor-grabbing ${
         task.is_completed ? "opacity-50" : dimmed ? "opacity-40" : ""
       }`}
       onClick={(e) => onTaskClick(task, e)}

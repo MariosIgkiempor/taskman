@@ -9,7 +9,7 @@
 
 @theme {
     --font-sans:
-        'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif,
+        'Geist', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 
@@ -62,74 +62,74 @@
 }
 
 :root {
-    --background: oklch(0.98 0.002 80);
-    --foreground: oklch(0.15 0.01 260);
+    --background: oklch(0.985 0.003 85);
+    --foreground: oklch(0.14 0.005 250);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.15 0.01 260);
+    --card-foreground: oklch(0.14 0.005 250);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.15 0.01 260);
-    --primary: oklch(0.5 0.22 270);
+    --popover-foreground: oklch(0.14 0.005 250);
+    --primary: oklch(0.5 0.18 252);
     --primary-foreground: oklch(1 0 0);
-    --secondary: oklch(0.955 0.008 270);
-    --secondary-foreground: oklch(0.35 0.05 270);
-    --muted: oklch(0.96 0.004 80);
-    --muted-foreground: oklch(0.5 0.01 260);
-    --accent: oklch(0.955 0.015 270);
-    --accent-foreground: oklch(0.4 0.15 270);
-    --destructive: oklch(0.55 0.22 25);
-    --destructive-foreground: oklch(0.55 0.22 25);
-    --border: oklch(0.93 0.005 80);
-    --input: oklch(0.93 0.005 80);
-    --ring: oklch(0.5 0.22 270);
-    --chart-1: oklch(0.5 0.22 270);
-    --chart-2: oklch(0.6 0.15 170);
-    --chart-3: oklch(0.55 0.12 50);
-    --chart-4: oklch(0.65 0.18 310);
-    --chart-5: oklch(0.6 0.2 140);
+    --secondary: oklch(0.96 0.006 250);
+    --secondary-foreground: oklch(0.35 0.04 250);
+    --muted: oklch(0.965 0.004 85);
+    --muted-foreground: oklch(0.52 0.008 250);
+    --accent: oklch(0.96 0.01 250);
+    --accent-foreground: oklch(0.4 0.12 252);
+    --destructive: oklch(0.55 0.2 25);
+    --destructive-foreground: oklch(0.55 0.2 25);
+    --border: oklch(0.92 0.004 250 / 0.6);
+    --input: oklch(0.92 0.004 250 / 0.6);
+    --ring: oklch(0.5 0.18 252);
+    --chart-1: oklch(0.52 0.18 252);
+    --chart-2: oklch(0.62 0.14 175);
+    --chart-3: oklch(0.6 0.12 55);
+    --chart-4: oklch(0.6 0.14 310);
+    --chart-5: oklch(0.6 0.15 150);
     --radius: 0.5rem;
-    --sidebar: oklch(0.16 0.02 260);
-    --sidebar-foreground: oklch(0.85 0.01 260);
-    --sidebar-primary: oklch(0.65 0.2 270);
+    --sidebar: oklch(0.15 0.012 250);
+    --sidebar-foreground: oklch(0.82 0.006 250);
+    --sidebar-primary: oklch(0.62 0.16 252);
     --sidebar-primary-foreground: oklch(1 0 0);
-    --sidebar-accent: oklch(0.22 0.025 260);
-    --sidebar-accent-foreground: oklch(0.92 0.005 260);
-    --sidebar-border: oklch(0.25 0.02 260);
-    --sidebar-ring: oklch(0.5 0.22 270);
+    --sidebar-accent: oklch(0.21 0.015 250);
+    --sidebar-accent-foreground: oklch(0.92 0.004 250);
+    --sidebar-border: oklch(0.24 0.012 250);
+    --sidebar-ring: oklch(0.5 0.18 252);
 }
 
 .dark {
-    --background: oklch(0.13 0.015 260);
-    --foreground: oklch(0.95 0.005 80);
-    --card: oklch(0.17 0.015 260);
-    --card-foreground: oklch(0.95 0.005 80);
-    --popover: oklch(0.17 0.015 260);
-    --popover-foreground: oklch(0.95 0.005 80);
-    --primary: oklch(0.65 0.2 270);
+    --background: oklch(0.12 0.01 250);
+    --foreground: oklch(0.95 0.004 85);
+    --card: oklch(0.16 0.01 250);
+    --card-foreground: oklch(0.95 0.004 85);
+    --popover: oklch(0.16 0.01 250);
+    --popover-foreground: oklch(0.95 0.004 85);
+    --primary: oklch(0.62 0.16 252);
     --primary-foreground: oklch(1 0 0);
-    --secondary: oklch(0.22 0.025 260);
-    --secondary-foreground: oklch(0.85 0.01 260);
-    --muted: oklch(0.2 0.015 260);
-    --muted-foreground: oklch(0.6 0.01 260);
-    --accent: oklch(0.22 0.03 270);
-    --accent-foreground: oklch(0.8 0.12 270);
+    --secondary: oklch(0.21 0.015 250);
+    --secondary-foreground: oklch(0.85 0.008 250);
+    --muted: oklch(0.19 0.01 250);
+    --muted-foreground: oklch(0.58 0.008 250);
+    --accent: oklch(0.21 0.02 252);
+    --accent-foreground: oklch(0.78 0.1 252);
     --destructive: oklch(0.45 0.18 25);
     --destructive-foreground: oklch(0.7 0.2 25);
-    --border: oklch(0.24 0.015 260);
-    --input: oklch(0.24 0.015 260);
-    --ring: oklch(0.65 0.2 270);
-    --chart-1: oklch(0.65 0.2 270);
-    --chart-2: oklch(0.65 0.15 170);
-    --chart-3: oklch(0.65 0.15 50);
-    --chart-4: oklch(0.7 0.18 310);
-    --chart-5: oklch(0.65 0.2 140);
-    --sidebar: oklch(0.11 0.02 260);
-    --sidebar-foreground: oklch(0.85 0.01 260);
-    --sidebar-primary: oklch(0.65 0.2 270);
+    --border: oklch(0.23 0.01 250);
+    --input: oklch(0.23 0.01 250);
+    --ring: oklch(0.62 0.16 252);
+    --chart-1: oklch(0.62 0.16 252);
+    --chart-2: oklch(0.65 0.14 175);
+    --chart-3: oklch(0.65 0.12 55);
+    --chart-4: oklch(0.65 0.14 310);
+    --chart-5: oklch(0.65 0.15 150);
+    --sidebar: oklch(0.1 0.012 250);
+    --sidebar-foreground: oklch(0.82 0.006 250);
+    --sidebar-primary: oklch(0.62 0.16 252);
     --sidebar-primary-foreground: oklch(1 0 0);
-    --sidebar-accent: oklch(0.18 0.025 260);
-    --sidebar-accent-foreground: oklch(0.92 0.005 260);
-    --sidebar-border: oklch(0.2 0.02 260);
-    --sidebar-ring: oklch(0.65 0.2 270);
+    --sidebar-accent: oklch(0.17 0.015 250);
+    --sidebar-accent-foreground: oklch(0.92 0.004 250);
+    --sidebar-border: oklch(0.19 0.012 250);
+    --sidebar-ring: oklch(0.62 0.16 252);
 }
 
 @layer base {
@@ -142,16 +142,6 @@
     }
 }
 
-/* ── Global flat overrides ──────────────────────────────────────── */
-
-/* Remove all default shadows from shadcn components */
-[data-slot='button'],
-[data-slot='input'],
-[data-slot='select-trigger'],
-[data-slot='card'] {
-    box-shadow: none !important;
-}
-
 /* ── FullCalendar Theme Integration ──────────────────────────────── */
 
 .fc {
@@ -159,20 +149,20 @@
     --fc-page-bg-color: var(--card);
     --fc-neutral-bg-color: var(--muted);
     --fc-neutral-text-color: var(--muted-foreground);
-    --fc-today-bg-color: oklch(0.96 0.015 270);
-    --fc-now-indicator-color: oklch(0.5 0.22 270);
-    --fc-event-bg-color: oklch(0.92 0.03 270);
+    --fc-today-bg-color: oklch(0.96 0.012 252);
+    --fc-now-indicator-color: oklch(0.5 0.18 252);
+    --fc-event-bg-color: oklch(0.93 0.025 252);
     --fc-event-border-color: transparent;
-    --fc-event-text-color: oklch(0.3 0.05 270);
-    --fc-highlight-color: oklch(0.94 0.02 270 / 0.5);
+    --fc-event-text-color: oklch(0.3 0.04 252);
+    --fc-highlight-color: oklch(0.94 0.015 252 / 0.5);
     font-family: inherit;
 }
 
 .dark .fc {
-    --fc-today-bg-color: oklch(0.18 0.025 270);
-    --fc-highlight-color: oklch(0.25 0.03 270 / 0.4);
-    --fc-event-bg-color: oklch(0.25 0.04 270);
-    --fc-event-text-color: oklch(0.8 0.06 270);
+    --fc-today-bg-color: oklch(0.18 0.02 252);
+    --fc-highlight-color: oklch(0.25 0.025 252 / 0.4);
+    --fc-event-bg-color: oklch(0.25 0.035 252);
+    --fc-event-text-color: oklch(0.8 0.05 252);
 }
 
 /* Column headers */
@@ -211,20 +201,20 @@
 
 .fc .fc-timegrid-slot-minor {
     border-top-style: dotted;
-    border-color: oklch(0.93 0.005 80 / 0.5);
+    border-color: oklch(0.93 0.004 85 / 0.5);
 }
 
 .dark .fc .fc-timegrid-slot-minor {
-    border-color: oklch(0.24 0.015 260 / 0.5);
+    border-color: oklch(0.23 0.01 250 / 0.5);
 }
 
 /* Hover effect on time slots */
 .fc .fc-timegrid-col:not(.fc-day-today):hover {
-    background: oklch(0.97 0.005 270 / 0.3);
+    background: oklch(0.97 0.005 252 / 0.3);
 }
 
 .dark .fc .fc-timegrid-col:not(.fc-day-today):hover {
-    background: oklch(0.18 0.02 270 / 0.3);
+    background: oklch(0.18 0.015 252 / 0.3);
 }
 
 /* Now indicator */
@@ -262,12 +252,13 @@
         transform 0.15s ease;
     cursor: grab;
     overflow: hidden;
-    box-shadow: none;
+    box-shadow: 0 1px 2px oklch(0.15 0.01 250 / 0.04);
 }
 
 .fc .fc-timegrid-event:hover {
     opacity: 0.9;
     transform: translateY(-1px);
+    box-shadow: 0 2px 4px oklch(0.15 0.01 250 / 0.08);
 }
 
 .fc .fc-timegrid-event:active {
@@ -323,7 +314,7 @@
 .fc .fc-event-mirror {
     opacity: 0.8;
     transform: scale(1.02);
-    box-shadow: none;
+    box-shadow: 0 4px 8px oklch(0.15 0.01 250 / 0.12);
 }
 
 /* Duplicate-mode blink on original event */
@@ -356,12 +347,12 @@
 }
 
 .fc .fc-scroller::-webkit-scrollbar-thumb {
-    background: oklch(0.8 0 0);
+    background: oklch(0.78 0.004 250);
     border-radius: 2px;
 }
 
 .dark .fc .fc-scroller::-webkit-scrollbar-thumb {
-    background: oklch(0.3 0 0);
+    background: oklch(0.3 0.005 250);
 }
 
 /* Remove default FullCalendar table styling artifacts */

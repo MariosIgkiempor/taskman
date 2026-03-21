@@ -56,7 +56,7 @@ function StatCard({
   color: string;
 }) {
   return (
-    <div className="rounded-xl bg-card p-5">
+    <div className="rounded-xl border bg-card p-5 shadow-[0_1px_3px_oklch(0.15_0.01_250/0.04),0_1px_2px_oklch(0.15_0.01_250/0.02)] transition-shadow duration-200 hover:shadow-[0_4px_6px_-1px_oklch(0.15_0.01_250/0.06),0_2px_4px_-2px_oklch(0.15_0.01_250/0.04)]">
       <div className="flex items-center gap-3">
         <div className={`flex size-9 items-center justify-center rounded-lg ${color}/10`}>
           <Icon className={`size-4 ${color}`} />
@@ -100,7 +100,7 @@ function TaskRow({
   return (
     <Link
       href={taskDeepLink(task)}
-      className="group flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/50"
+      className="group flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-150 hover:bg-muted/50"
     >
       <div className="min-w-0 flex-1">
         <p
